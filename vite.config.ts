@@ -6,7 +6,8 @@ export default defineConfig({
     plugins: [react()],
     server: {
         port: 3001,
-        host: true
+        host: true,
+        allowedHosts: ['blurry-admin.onrender.com'], // 👈 add this line
     },
     build: {
         outDir: 'dist',
