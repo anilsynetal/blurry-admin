@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AdminUser } from '../context/SimpleAdminContext';
 
-const API_BASE_URL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4002/api/admin';
+const API_BASE_URL = (import.meta as any).env.VITE_API_URL + "/v1" || 'http://localhost:4002/api/admin/v1';
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
