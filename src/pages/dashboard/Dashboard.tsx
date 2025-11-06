@@ -14,16 +14,6 @@ interface DashboardStats {
     totalBlogs: number;
 }
 
-interface RecentActivity {
-    id: number;
-    name: string;
-    email: string;
-    mobile: string;
-    message: string;
-    type: 'plan' | 'general';
-    createdAt: string;
-}
-
 const Dashboard: React.FC = () => {
     const { showToast } = useToast();
     const [stats, setStats] = useState<DashboardStats>({
