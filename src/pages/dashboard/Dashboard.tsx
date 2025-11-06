@@ -232,6 +232,11 @@ const Dashboard: React.FC = () => {
                             <div className="col-sm-7">
                                 <div className="card-body">
                                     <h5 className="card-title text-primary">Welcome to Blurry Admin! 🎉</h5>
+                                    <p className="mb-4">
+                                        Here is a quick overview of your dashboard. Use the stats above to navigate to different sections.
+                                    </p>
+                                    <Link to="/users" className="btn btn-sm btn-outline-primary">View Users</Link>
+                                    <Link to="/plans" className="btn btn-sm btn-outline-primary ms-2">View Plans</Link>
                                 </div>
                             </div>
                             <div className="col-sm-5 text-center text-sm-left">
