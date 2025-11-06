@@ -415,3 +415,31 @@ table.dataTable th {
 .layout-menu-collapsed .layout-menu-toggle .bx-chevron-left {
     transform: rotate(180deg);
 }
+
+/* Custom menu scrolling */
+.layout-menu .menu-inner.menu-scrollable,
+.menu-inner.menu-scrollable {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+.layout-menu .menu-inner.menu-scrollable::-webkit-scrollbar,
+.menu-inner.menu-scrollable::-webkit-scrollbar {
+    width: 4px;
+}
+
+.layout-menu .menu-inner.menu-scrollable::-webkit-scrollbar-track,
+.menu-inner.menu-scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.layout-menu .menu-inner.menu-scrollable::-webkit-scrollbar-thumb,
+.menu-inner.menu-scrollable::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
+}
+
+.layout-menu .menu-inner.menu-scrollable::-webkit-scrollbar-thumb:hover,
+.menu-inner.menu-scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}

@@ -186,7 +186,7 @@ const Sidebar: React.FC = () => {
             <div className="menu-inner-shadow"></div>
 
             {/* Menu */}
-            <ul className="menu-inner py-1 ps ps--active-y" style={{ maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' }}>
+            <ul className="menu-inner py-1 ps ps--active-y menu-scrollable" style={{ maxHeight: 'calc(100vh - 80px)' }}>
                 {menuItems.map((item, index) => (
                     <li key={index} className={`menu-item ${isActiveRoute(item.path) || hasActiveSubItem(item.subItems) ? 'active' : ''} ${item.subItems && isMenuOpen(item.name) ? 'open' : ''}`}>
                         {item.subItems ? (
