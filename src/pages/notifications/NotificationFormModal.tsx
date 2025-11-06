@@ -31,8 +31,6 @@ interface NotificationFormData {
     message: string;
     type: 'info' | 'warning' | 'error' | 'success' | 'promotion' | 'system';
     priority: 'low' | 'normal' | 'high';
-    actionUrl: string;
-    actionText: string;
     push: boolean;
     expiresAt: string;
     recipients: string[];
@@ -63,8 +61,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
         message: '',
         type: 'info',
         priority: 'normal',
-        actionUrl: '',
-        actionText: '',
         push: true,
         expiresAt: '',
         recipients: [],
@@ -86,11 +82,11 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             const response = await usersService.getUsers({
                 limit: 100,
                 isActive: true,
-                sortBy: 'username'
+                sortBy: 'name'
             });
             const options = response.data.map(user => ({
                 value: user._id!,
-                label: `${user.username} (${user.email})`
+                label: `${user.name} (${user.email})`
             }));
             setUserOptions(options);
         } catch (error) {
@@ -111,8 +107,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             message: '',
             type: 'info',
             priority: 'normal',
-            actionUrl: '',
-            actionText: '',
             push: true,
             expiresAt: '',
             recipients: [],
@@ -190,10 +184,7 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             }
         }
 
-        // Action URL validation
-        if (formData.actionUrl && !/^https?:\/\//.test(formData.actionUrl)) {
-            errors.actionUrl = 'Please enter a valid URL (starting with http:// or https://)';
-        }
+
 
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
@@ -217,7 +208,7 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
     };
 
     const handleSubmit = async () => {
-        if (!validateForm()) {
+        if (!validateForm() || isSubmitting) {
             return;
         }
 
@@ -238,11 +229,9 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 type: formData.type,
                 priority: formData.priority,
                 image: imageUrl || undefined,
-                actionUrl: formData.actionUrl || undefined,
-                actionText: formData.actionText || undefined,
                 push: formData.push,
                 expiresAt: formData.expiresAt || undefined,
-                metadata: Object.keys(formData.metadata).length > 0 ? formData.metadata : undefined
+                data: Object.keys(formData.metadata).length > 0 ? formData.metadata : {}
             };
 
             if (mode === 'broadcast') {
@@ -480,29 +469,7 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 </div>
             )}
 
-            <div className="row">
-                <div className="col-md-6">
-                    <FormField label="Action URL" error={fieldErrors.actionUrl}>
-                        <FormInput
-                            value={formData.actionUrl}
-                            onChange={(value) => handleInputChange('actionUrl', value)}
-                            placeholder="https://example.com/action"
-                            error={!!fieldErrors.actionUrl}
-                            disabled={isSubmitting}
-                        />
-                    </FormField>
-                </div>
-                <div className="col-md-6">
-                    <FormField label="Action Button Text">
-                        <FormInput
-                            value={formData.actionText}
-                            onChange={(value) => handleInputChange('actionText', value)}
-                            placeholder="View Details, Learn More, etc."
-                            disabled={isSubmitting}
-                        />
-                    </FormField>
-                </div>
-            </div>
+
 
             <div className="row">
                 <div className="col-md-6">

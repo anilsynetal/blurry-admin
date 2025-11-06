@@ -15,8 +15,6 @@ export interface Notification extends BaseEntity {
     type: 'info' | 'warning' | 'error' | 'success' | 'promotion' | 'system';
     priority: 'low' | 'normal' | 'high';
     image?: string;
-    actionUrl?: string;
-    actionText?: string;
     isBroadcast: boolean;
     isRead: boolean;
     recipients?: string[]; // User IDs for targeted notifications
@@ -52,11 +50,9 @@ export interface CreateBroadcastPayload {
     type?: 'info' | 'warning' | 'error' | 'success' | 'promotion' | 'system';
     priority?: 'low' | 'normal' | 'high';
     image?: string;
-    actionUrl?: string;
-    actionText?: string;
     push?: boolean;
     expiresAt?: string;
-    metadata?: Record<string, any>;
+    data?: Record<string, any>;
 }
 
 export interface CreateTargetedNotificationPayload extends CreateBroadcastPayload {
@@ -147,9 +143,17 @@ class NotificationsService extends BaseService<Notification> {
      * Create targeted notification (sent to specific users)
      */
     async createTargetedNotification(data: CreateTargetedNotificationPayload): Promise<ApiResponse<Notification>> {
+        // Transform recipients to userIds for backend compatibility
+        const backendData = {
+            ...data,
+            userIds: data.recipients
+        };
+        // Remove recipients field as backend doesn't expect it
+        delete (backendData as any).recipients;
+
         const response = await api.post<ApiResponse<Notification>>(
             `${this.baseEndpoint}/users`,
-            data
+            backendData
         );
         return this.handleResponse(response);
     }

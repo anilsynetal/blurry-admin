@@ -89,6 +89,7 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     useEffect(() => {
         const validateToken = async () => {
             const token = localStorage.getItem('admin_token');
+
             if (token) {
                 dispatch({ type: 'SET_LOADING', payload: true });
                 try {
@@ -104,6 +105,9 @@ export const AdminProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 } finally {
                     dispatch({ type: 'SET_LOADING', payload: false });
                 }
+            } else {
+                // No token found, but don't set loading
+                dispatch({ type: 'SET_LOADING', payload: false });
             }
         };
 

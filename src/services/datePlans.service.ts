@@ -51,6 +51,8 @@ export interface DatePlanStatsResponse {
     acceptedPlans: number;
     completedPlans: number;
     cancelledPlans: number;
+    expiredPlans: number;
+    rejectedPlans: number;
     plansByStatus: Record<string, number>;
 }
 
@@ -63,24 +65,40 @@ class DatePlansService extends BaseService<DatePlan> {
     }
 
     /**
-     * Get date plans list with filtering
+     * Get date plans list with filtering - using correct admin endpoint
      */
     async getDatePlans(params: DatePlanQueryParams = {}): Promise<ApiListResponse<DatePlan>> {
-        return this.getAll(params);
+        const queryString = this.buildQueryString(params);
+        const url = `${this.baseEndpoint}/list${queryString ? `?${queryString}` : ''}`;
+        const response = await api.get<ApiListResponse<DatePlan>>(url);
+        return this.handleResponse(response);
     }
 
     /**
-     * Get date plan details by ID
+     * Get date plan details by ID - using correct admin endpoint
      */
     async getDatePlanById(id: string): Promise<ApiResponse<DatePlan>> {
-        return this.getById(id);
+        const response = await api.get<ApiResponse<DatePlan>>(`${this.baseEndpoint}/details/${id}`);
+        return this.handleResponse(response);
     }
 
     /**
-     * Delete date plan
+     * Delete date plan - using correct admin endpoint
      */
     async deleteDatePlan(id: string): Promise<DeleteResponse> {
-        return this.delete(id);
+        const response = await api.delete<DeleteResponse>(`${this.baseEndpoint}/delete/${id}`);
+        return this.handleResponse(response);
+    }
+
+    /**
+     * Update date plan status (activate/deactivate)
+     */
+    async updateDatePlanStatus(id: string, isActive: boolean): Promise<ApiResponse<DatePlan>> {
+        const response = await api.patch<ApiResponse<DatePlan>>(
+            `${this.baseEndpoint}/status/${id}`,
+            { isActive }
+        );
+        return this.handleResponse(response);
     }
 
     /**
@@ -89,6 +107,30 @@ class DatePlansService extends BaseService<DatePlan> {
     async getDatePlanStats(): Promise<ApiResponse<DatePlanStatsResponse>> {
         const response = await api.get<ApiResponse<DatePlanStatsResponse>>(`${this.baseEndpoint}/stats`);
         return this.handleResponse(response);
+    }
+
+    /**
+     * Get date plans by status
+     */
+    async getDatePlansByStatus(status: string, params: DatePlanQueryParams = {}): Promise<ApiListResponse<DatePlan>> {
+        const queryParams = { ...params, status };
+        return this.getDatePlans(queryParams);
+    }
+
+    /**
+     * Get date plans by user
+     */
+    async getDatePlansByUser(userId: string, params: DatePlanQueryParams = {}): Promise<ApiListResponse<DatePlan>> {
+        const queryParams = { ...params, proposedBy: userId };
+        return this.getDatePlans(queryParams);
+    }
+
+    /**
+     * Get date plans by date range
+     */
+    async getDatePlansByDateRange(dateFrom: string, dateTo: string, params: DatePlanQueryParams = {}): Promise<ApiListResponse<DatePlan>> {
+        const queryParams = { ...params, dateFrom, dateTo };
+        return this.getDatePlans(queryParams);
     }
 }
 

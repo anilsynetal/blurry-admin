@@ -12,6 +12,7 @@ import {
 } from '../../components/common';
 import NotificationFormModal from './NotificationFormModal.tsx';
 import NotificationDetailsModal from './NotificationDetailsModal.tsx';
+import { getNotificationImageUrl } from '../../utils/imageUtils';
 import Swal from 'sweetalert2';
 
 interface ApiError {
@@ -29,6 +30,7 @@ const NotificationsPage: React.FC = () => {
     // State management
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pageChanging, setPageChanging] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
     // Modal states
@@ -61,6 +63,17 @@ const NotificationsPage: React.FC = () => {
         fetchStats();
     }, [filters]);
 
+    // Also fetch when searchTerm changes after a delay (debounced)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (searchTerm !== filters.search) {
+                fetchNotifications();
+            }
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
+
     const fetchNotifications = async () => {
         try {
             setLoading(true);
@@ -68,16 +81,43 @@ const NotificationsPage: React.FC = () => {
                 ...filters,
                 search: searchTerm
             };
+
+            console.log('Fetching notifications with params:', queryParams);
+
             const response = await notificationsService.getNotifications(queryParams);
 
-            setNotifications(response.data || []);
+            console.log('Notifications response:', response);
+            console.log('Notifications data:', response.data);
+            console.log('Notifications pagination:', response.pagination);
+
+            const notifications = response.data || [];
+            setNotifications(notifications);
+
             if (response.pagination) {
-                setPagination({
+                const paginationData = {
                     totalRecords: response.pagination.totalRecords,
                     currentPage: response.pagination.currentPage,
                     totalPages: response.pagination.totalPages,
                     pageSize: response.pagination.pageSize
-                });
+                };
+
+                setPagination(paginationData);
+
+                // If we're on a page higher than 1 but there are no notifications and no total records,
+                // or if we're on a page that doesn't exist, go back to page 1
+                const currentPage = filters.page || 1;
+                if (notifications.length === 0 && paginationData.totalRecords === 0 && currentPage > 1) {
+                    console.log('No notifications found on page', currentPage, 'redirecting to page 1');
+                    setFilters(prev => ({ ...prev, page: 1 }));
+                    return;
+                }
+
+                // If we're on a page beyond the total pages, go to the last page
+                if (paginationData.totalPages > 0 && currentPage > paginationData.totalPages) {
+                    console.log('Page', currentPage, 'exceeds total pages', paginationData.totalPages, 'redirecting to last page');
+                    setFilters(prev => ({ ...prev, page: paginationData.totalPages }));
+                    return;
+                }
             }
         } catch (error) {
             console.error('Error fetching notifications:', error);
@@ -89,6 +129,7 @@ const NotificationsPage: React.FC = () => {
             });
         } finally {
             setLoading(false);
+            setPageChanging(false);
         }
     };
 
@@ -111,7 +152,14 @@ const NotificationsPage: React.FC = () => {
     };
 
     const handlePageChange = (page: number) => {
-        setFilters(prev => ({ ...prev, page }));
+        console.log('Changing page to:', page);
+        console.log('Current filters:', filters);
+        setPageChanging(true);
+        setFilters(prev => {
+            const newFilters = { ...prev, page };
+            console.log('New filters:', newFilters);
+            return newFilters;
+        });
     };
 
     const handlePageSizeChange = (limit: number) => {
@@ -195,19 +243,22 @@ const NotificationsPage: React.FC = () => {
         }
     };
 
-    const getNotificationTypeColor = (type: string) => {
-        switch (type) {
+    const getNotificationTypeColor = (type: string | null | undefined) => {
+        if (!type) return 'info';
+        switch (type.toLowerCase()) {
             case 'error': return 'danger';
             case 'warning': return 'warning';
             case 'success': return 'success';
             case 'promotion': return 'primary';
             case 'system': return 'secondary';
+            case 'info': return 'info';
             default: return 'info';
         }
     };
 
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
+    const getPriorityColor = (priority: string | null | undefined) => {
+        if (!priority) return 'primary';
+        switch (priority.toLowerCase()) {
             case 'high': return 'danger';
             case 'normal': return 'primary';
             case 'low': return 'secondary';
@@ -217,6 +268,16 @@ const NotificationsPage: React.FC = () => {
 
     if (loading && notifications.length === 0) {
         return <LoadingSpinner size="lg" text="Loading notifications..." />;
+    }
+
+    if (pageChanging) {
+        return (
+            <div className="position-relative">
+                <div className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-light bg-opacity-75" style={{ zIndex: 1000 }}>
+                    <LoadingSpinner size="md" text="Loading page..." />
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -425,18 +486,18 @@ const NotificationsPage: React.FC = () => {
                                                         {notification.image && (
                                                             <div className="avatar avatar-sm me-3">
                                                                 <img
-                                                                    src={notification.image}
+                                                                    src={getNotificationImageUrl(notification.image) || notification.image}
                                                                     alt=""
                                                                     className="rounded"
                                                                 />
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <h6 className="mb-0">{notification.title}</h6>
+                                                            <h6 className="mb-0">{notification.title || 'Untitled'}</h6>
                                                             <small className="text-muted">
-                                                                {notification.message.length > 50
+                                                                {notification.message && notification.message.length > 50
                                                                     ? `${notification.message.substring(0, 50)}...`
-                                                                    : notification.message
+                                                                    : notification.message || 'No message'
                                                                 }
                                                             </small>
                                                         </div>
@@ -444,12 +505,12 @@ const NotificationsPage: React.FC = () => {
                                                 </td>
                                                 <td>
                                                     <span className={`badge bg-${getNotificationTypeColor(notification.type)}`}>
-                                                        {notification.type.toUpperCase()}
+                                                        {notification.type?.toUpperCase() || 'UNKNOWN'}
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <span className={`badge bg-${getPriorityColor(notification.priority)}`}>
-                                                        {notification.priority.toUpperCase()}
+                                                        {notification.priority?.toUpperCase() || 'NORMAL'}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -457,7 +518,7 @@ const NotificationsPage: React.FC = () => {
                                                         <span className={`badge ${notification.isBroadcast ? 'bg-primary' : 'bg-info'}`}>
                                                             {notification.isBroadcast ? 'Broadcast' : 'Targeted'}
                                                         </span>
-                                                        {notification.deliveryCount > 0 && (
+                                                        {(notification.deliveryCount || 0) > 0 && (
                                                             <small className="text-muted ms-2">
                                                                 ({notification.deliveryCount} sent)
                                                             </small>
@@ -466,7 +527,7 @@ const NotificationsPage: React.FC = () => {
                                                 </td>
                                                 <td>
                                                     <StatusBadge
-                                                        status={notification.push}
+                                                        status={!!notification.push}
                                                         trueLabel="Enabled"
                                                         falseLabel="Disabled"
                                                         trueVariant="success"
@@ -491,7 +552,7 @@ const NotificationsPage: React.FC = () => {
                                                 <td>
                                                     <div>
                                                         <small className="text-muted">
-                                                            {new Date(notification.createdAt!).toLocaleDateString()}
+                                                            {notification.createdAt ? new Date(notification.createdAt).toLocaleDateString() : 'Unknown'}
                                                         </small>
                                                         <div>
                                                             <small className="text-muted">

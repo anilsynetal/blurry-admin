@@ -33,9 +33,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response: AxiosResponse) => response,
     (error: AxiosError) => {
+        // Don't auto-redirect on 401 to prevent Settings tab switching issues
         if (error.response?.status === 401) {
+            console.warn('401 Unauthorized error detected');
             localStorage.removeItem('admin_token');
-            window.location.href = '/admin/login';
         }
         return Promise.reject(error);
     }

@@ -112,10 +112,10 @@ export const ActionBar: React.FC<ActionBarProps> = ({
                 <div className="card">
                     <div className="card-header">
                         <div className="row align-items-center">
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <h5 className="mb-0">{title}</h5>
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-8">
                                 <div className="d-flex justify-content-end gap-2">
                                     {onSearchChange && (
                                         <div className="input-group" style={{ maxWidth: '250px' }}>
@@ -293,19 +293,32 @@ export const TablePagination: React.FC<TablePaginationProps> = ({
                         </button>
                     </li>
 
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                            <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                                <button
-                                    className="page-link"
-                                    onClick={() => onPageChange(page)}
-                                >
-                                    {page}
-                                </button>
-                            </li>
-                        );
-                    })}
+                    {(() => {
+                        const pages = [];
+                        const maxVisiblePages = 5;
+                        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+                        // Adjust start page if we're near the end
+                        if (endPage - startPage < maxVisiblePages - 1) {
+                            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                        }
+
+                        for (let i = startPage; i <= endPage; i++) {
+                            pages.push(
+                                <li key={i} className={`page-item ${currentPage === i ? 'active' : ''}`}>
+                                    <button
+                                        className="page-link"
+                                        onClick={() => onPageChange(i)}
+                                    >
+                                        {i}
+                                    </button>
+                                </li>
+                            );
+                        }
+
+                        return pages;
+                    })()}
 
                     <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
                         <button

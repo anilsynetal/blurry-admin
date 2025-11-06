@@ -16,10 +16,17 @@ import DatePlansPage from '../pages/date-plans/DatePlansPage';
 import MatchesPage from '../pages/matches/MatchesPage';
 import SubscriptionsPage from '../pages/subscriptions/SubscriptionsPage';
 import TransactionsPage from '../pages/transactions/TransactionsPage';
+import ProfilePage from '../pages/profile/ProfilePage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state } = useAdmin();
 
+    // If still loading, show loading state
+    if (state.loading) {
+        return <div>Loading...</div>;
+    }
+
+    // Check if user has valid authentication (either authenticated OR has token)
     if (!state.isAuthenticated && !state.token) {
         return <Navigate to="/login" replace />;
     }
@@ -51,6 +58,7 @@ const AdminRoutes: React.FC = () => {
                             <Routes>
                                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                                 <Route path="/dashboard" element={<Dashboard />} />
+                                <Route path="/profile" element={<ProfilePage />} />
                                 <Route path="/users" element={<UsersPage />} />
                                 <Route path="/notifications" element={<NotificationsPage />} />
                                 <Route path="/lounges" element={<LoungesPage />} />
@@ -63,6 +71,7 @@ const AdminRoutes: React.FC = () => {
                                 <Route path="/matches" element={<MatchesPage />} />
                                 <Route path="/email-templates" element={<EmailTemplatesPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
+                                <Route path="/settings/*" element={<Navigate to="/settings" replace />} />
                                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
                             </Routes>
                         </AdminLayout>

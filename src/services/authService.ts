@@ -24,9 +24,10 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Don't auto-redirect on 401 to prevent Settings tab switching issues
         if (error.response?.status === 401) {
+            console.warn('401 Unauthorized error in authService');
             localStorage.removeItem('admin_token');
-            window.location.href = '/login';
         }
         return Promise.reject(error);
     }

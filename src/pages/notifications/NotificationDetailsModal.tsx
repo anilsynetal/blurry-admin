@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { notificationsService, Notification, DeliveryStatsResponse } from '../../services/notifications.service';
 import { useToast } from '../../context/ToastContext';
 import { StatusBadge, LoadingSpinner } from '../../components/common';
+import { getNotificationImageUrl } from '../../utils/imageUtils';
 
 interface NotificationDetailsModalProps {
     isOpen: boolean;
@@ -87,7 +88,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                 {notification.image && (
                                                     <div className="avatar avatar-lg">
                                                         <img
-                                                            src={notification.image}
+                                                            src={getNotificationImageUrl(notification.image) || notification.image}
                                                             alt=""
                                                             className="rounded"
                                                             style={{ width: '80px', height: '80px', objectFit: 'cover' }}
@@ -364,7 +365,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                 </div>
                                                 <div className="card-body text-center">
                                                     <img
-                                                        src={notification.image}
+                                                        src={getNotificationImageUrl(notification.image) || notification.image}
                                                         alt="Notification"
                                                         className="img-fluid rounded"
                                                         style={{ maxHeight: '300px' }}

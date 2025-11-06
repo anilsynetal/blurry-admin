@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
 import { settingsService, SMTPConfig } from '../../services/settings.service';
 import { useToast } from '../../context/ToastContext';
 
@@ -25,39 +26,52 @@ const SettingsPage: React.FC = () => {
     });
     const [privacyPolicy, setPrivacyPolicy] = useState('');
     const [termsConditions, setTermsConditions] = useState('');
+    const [showPrivacyPreview, setShowPrivacyPreview] = useState(false);
+    const [showTermsPreview, setShowTermsPreview] = useState(false);
 
     useEffect(() => {
-        fetchSettings();
+        // Delay the API calls to prevent authentication issues on initial load
+        const timer = setTimeout(() => {
+            fetchSettings();
+        }, 100);
+
+        return () => clearTimeout(timer);
     }, []);
 
     const fetchSettings = async () => {
         setLoading(true);
         try {
-            // Fetch SMTP settings
-            const smtpResponse = await settingsService.getSmtpConfig();
-            if (smtpResponse.status === 'success' && smtpResponse.data) {
-                setSMTPSettings(smtpResponse.data);
+            // Try to fetch SMTP settings (requires auth)
+            try {
+                const smtpResponse = await settingsService.getSmtpConfig();
+                if (smtpResponse.status === 'success' && smtpResponse.data) {
+                    setSMTPSettings(smtpResponse.data);
+                }
+            } catch (smtpError) {
+                console.warn('Could not fetch SMTP settings (may require authentication):', smtpError);
             }
 
-            // Fetch Privacy Policy
-            const privacyResponse = await settingsService.getPrivacyPolicy();
-            if (privacyResponse.status === 'success' && privacyResponse.data?.content) {
-                setPrivacyPolicy(privacyResponse.data.content);
+            // Fetch Privacy Policy (public)
+            try {
+                const privacyResponse = await settingsService.getPrivacyPolicy();
+                if (privacyResponse.status === 'success' && privacyResponse.data?.content) {
+                    setPrivacyPolicy(privacyResponse.data.content);
+                }
+            } catch (privacyError) {
+                console.warn('Could not fetch privacy policy:', privacyError);
             }
 
-            // Fetch Terms and Conditions
-            const termsResponse = await settingsService.getTermsAndConditions();
-            if (termsResponse.status === 'success' && termsResponse.data?.content) {
-                setTermsConditions(termsResponse.data.content);
+            // Fetch Terms and Conditions (public)
+            try {
+                const termsResponse = await settingsService.getTermsAndConditions();
+                if (termsResponse.status === 'success' && termsResponse.data?.content) {
+                    setTermsConditions(termsResponse.data.content);
+                }
+            } catch (termsError) {
+                console.warn('Could not fetch terms and conditions:', termsError);
             }
         } catch (error) {
-            console.error('Error fetching settings:', error);
-            const apiError = error as ApiError;
-            showToast({
-                type: 'error',
-                title: 'Error',
-                message: apiError.response?.data?.message || apiError.message || 'Failed to fetch settings'
-            });
+            console.error('General error fetching settings:', error);
         } finally {
             setLoading(false);
         }
@@ -159,8 +173,13 @@ const SettingsPage: React.FC = () => {
                             <ul className="nav nav-pills flex-column flex-md-row mb-3">
                                 <li className="nav-item">
                                     <button
+                                        type="button"
                                         className={`nav-link ${activeTab === 'smtp' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('smtp')}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('smtp');
+                                        }}
                                     >
                                         <i className="bx bx-envelope me-1"></i>
                                         SMTP Settings
@@ -168,8 +187,13 @@ const SettingsPage: React.FC = () => {
                                 </li>
                                 <li className="nav-item">
                                     <button
+                                        type="button"
                                         className={`nav-link ${activeTab === 'privacy' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('privacy')}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('privacy');
+                                        }}
                                     >
                                         <i className="bx bx-shield me-1"></i>
                                         Privacy Policy
@@ -177,8 +201,13 @@ const SettingsPage: React.FC = () => {
                                 </li>
                                 <li className="nav-item">
                                     <button
+                                        type="button"
                                         className={`nav-link ${activeTab === 'terms' ? 'active' : ''}`}
-                                        onClick={() => setActiveTab('terms')}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('terms');
+                                        }}
                                     >
                                         <i className="bx bx-file me-1"></i>
                                         Terms & Conditions
@@ -187,7 +216,7 @@ const SettingsPage: React.FC = () => {
                             </ul>
 
                             {/* Tab Content */}
-                            <div className="tab-content">
+                            <div className="tab-content1">
                                 {/* SMTP Settings Tab */}
                                 {activeTab === 'smtp' && (
                                     <div className="tab-pane active">
@@ -327,22 +356,40 @@ const SettingsPage: React.FC = () => {
                                                 <form onSubmit={handlePrivacyPolicySubmit}>
                                                     <div className="mb-3">
                                                         <label htmlFor="privacy-content" className="form-label">Privacy Policy Content</label>
-                                                        <textarea
-                                                            className="form-control"
-                                                            id="privacy-content"
-                                                            rows={15}
+                                                        <Editor
+                                                            apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                                                             value={privacyPolicy}
-                                                            onChange={(e) => setPrivacyPolicy(e.target.value)}
-                                                            placeholder="Enter privacy policy content..."
+                                                            onEditorChange={(content: string) => setPrivacyPolicy(content)}
+                                                            init={{
+                                                                height: 500,
+                                                                menubar: true,
+                                                                plugins: [
+                                                                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                                                                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                                                                    'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+                                                                ],
+                                                                toolbar: 'undo redo | blocks | ' +
+                                                                    'bold italic forecolor | alignleft aligncenter ' +
+                                                                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                                                                    'removeformat | help',
+                                                                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                                                                placeholder: "Enter privacy policy content...",
+                                                                branding: false,
+                                                                statusbar: false
+                                                            }}
                                                         />
-                                                        <div className="form-text">You can use HTML tags for formatting.</div>
+                                                        <div className="form-text">Rich text editor with formatting options.</div>
                                                     </div>
 
                                                     <div className="mt-4">
                                                         <button type="submit" className="btn btn-primary me-2" disabled={loading}>
                                                             {loading ? 'Saving...' : 'Save Privacy Policy'}
                                                         </button>
-                                                        <button type="button" className="btn btn-outline-secondary">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline-secondary"
+                                                            onClick={() => setShowPrivacyPreview(true)}
+                                                        >
                                                             Preview
                                                         </button>
                                                     </div>
@@ -363,22 +410,40 @@ const SettingsPage: React.FC = () => {
                                                 <form onSubmit={handleTermsSubmit}>
                                                     <div className="mb-3">
                                                         <label htmlFor="terms-content" className="form-label">Terms & Conditions Content</label>
-                                                        <textarea
-                                                            className="form-control"
-                                                            id="terms-content"
-                                                            rows={15}
+                                                        <Editor
+                                                            apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                                                             value={termsConditions}
-                                                            onChange={(e) => setTermsConditions(e.target.value)}
-                                                            placeholder="Enter terms and conditions content..."
+                                                            onEditorChange={(content: string) => setTermsConditions(content)}
+                                                            init={{
+                                                                height: 500,
+                                                                menubar: true,
+                                                                plugins: [
+                                                                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                                                                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                                                                    'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
+                                                                ],
+                                                                toolbar: 'undo redo | blocks | ' +
+                                                                    'bold italic forecolor | alignleft aligncenter ' +
+                                                                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                                                                    'removeformat | help',
+                                                                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                                                                placeholder: "Enter terms and conditions content...",
+                                                                branding: false,
+                                                                statusbar: false
+                                                            }}
                                                         />
-                                                        <div className="form-text">You can use HTML tags for formatting.</div>
+                                                        <div className="form-text">Rich text editor with formatting options.</div>
                                                     </div>
 
                                                     <div className="mt-4">
                                                         <button type="submit" className="btn btn-primary me-2" disabled={loading}>
                                                             {loading ? 'Saving...' : 'Save Terms & Conditions'}
                                                         </button>
-                                                        <button type="button" className="btn btn-outline-secondary">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline-secondary"
+                                                            onClick={() => setShowTermsPreview(true)}
+                                                        >
                                                             Preview
                                                         </button>
                                                     </div>
@@ -393,11 +458,126 @@ const SettingsPage: React.FC = () => {
                 </div>
             </div>
 
+            {/* Privacy Policy Preview Modal */}
+            {showPrivacyPreview && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-xl">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bx bx-show me-2"></i>
+                                    Privacy Policy Preview
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowPrivacyPreview(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: privacyPolicy }}
+                                    style={{
+                                        fontFamily: 'Arial, sans-serif',
+                                        lineHeight: '1.6',
+                                        padding: '20px'
+                                    }}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowPrivacyPreview(false)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Terms & Conditions Preview Modal */}
+            {showTermsPreview && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-xl">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bx bx-show me-2"></i>
+                                    Terms & Conditions Preview
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setShowTermsPreview(false)}
+                                ></button>
+                            </div>
+                            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                                <div
+                                    dangerouslySetInnerHTML={{ __html: termsConditions }}
+                                    style={{
+                                        fontFamily: 'Arial, sans-serif',
+                                        lineHeight: '1.6',
+                                        padding: '20px'
+                                    }}
+                                />
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setShowTermsPreview(false)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Custom Styles */}
             <style>{`
-                /* Required field indicator */
                 .text-danger {
                     color: #dc3545 !important;
+                }
+
+                .nav-pills .nav-link {
+                    border-radius: 0.375rem;
+                    margin-right: 0.5rem;
+                    border: none;
+                    background: none;
+                    text-decoration: none;
+                    cursor: pointer;
+                }
+
+                .nav-pills .nav-link:hover {
+                    background-color: rgba(105, 108, 255, 0.1);
+                    text-decoration: none;
+                }
+                
+                .nav-pills .nav-link:focus {
+                    outline: none;
+                    box-shadow: 0 0 0 0.2rem rgba(105, 108, 255, 0.25);
+                }
+
+                .modal-body img {
+                    max-width: 100%;
+                    height: auto;
+                }
+                
+                .modal-body table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 1rem;
+                }
+                
+                .modal-body table th,
+                .modal-body table td {
+                    padding: 0.5rem;
+                    border: 1px solid #ddd;
                 }
             `}</style>
         </div>
