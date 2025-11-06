@@ -43,19 +43,22 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
         }
     };
 
-    const getNotificationTypeColor = (type: string) => {
-        switch (type) {
+    const getNotificationTypeColor = (type: string | null | undefined) => {
+        if (!type) return 'info';
+        switch (type.toLowerCase()) {
             case 'error': return 'danger';
             case 'warning': return 'warning';
             case 'success': return 'success';
             case 'promotion': return 'primary';
             case 'system': return 'secondary';
+            case 'info': return 'info';
             default: return 'info';
         }
     };
 
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
+    const getPriorityColor = (priority: string | null | undefined) => {
+        if (!priority) return 'primary';
+        switch (priority.toLowerCase()) {
             case 'high': return 'danger';
             case 'normal': return 'primary';
             case 'low': return 'secondary';
@@ -97,14 +100,14 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                 )}
                                             </div>
                                             <div className="col">
-                                                <h3 className="mb-1">{notification.title}</h3>
-                                                <p className="mb-1 text-muted">{notification.message}</p>
+                                                <h3 className="mb-1">{notification.title || 'Untitled'}</h3>
+                                                <p className="mb-1 text-muted">{notification.message || 'No message'}</p>
                                                 <div className="d-flex gap-2 mt-2">
                                                     <span className={`badge bg-${getNotificationTypeColor(notification.type)}`}>
-                                                        {notification.type.toUpperCase()}
+                                                        {notification.type?.toUpperCase() || 'UNKNOWN'}
                                                     </span>
                                                     <span className={`badge bg-${getPriorityColor(notification.priority)}`}>
-                                                        {notification.priority.toUpperCase()}
+                                                        {notification.priority?.toUpperCase() || 'NORMAL'}
                                                     </span>
                                                     <span className={`badge ${notification.isBroadcast ? 'bg-primary' : 'bg-info'}`}>
                                                         {notification.isBroadcast ? 'Broadcast' : 'Targeted'}
@@ -183,7 +186,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                         <strong>Title:</strong>
                                                     </div>
                                                     <div className="col-sm-8">
-                                                        {notification.title}
+                                                        {notification.title || 'Untitled'}
                                                     </div>
                                                 </div>
                                                 <div className="row mb-3">
@@ -191,7 +194,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                         <strong>Message:</strong>
                                                     </div>
                                                     <div className="col-sm-8">
-                                                        {notification.message}
+                                                        {notification.message || 'No message'}
                                                     </div>
                                                 </div>
                                                 <div className="row mb-3">
@@ -200,7 +203,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                     </div>
                                                     <div className="col-sm-8">
                                                         <span className={`badge bg-${getNotificationTypeColor(notification.type)}`}>
-                                                            {notification.type.toUpperCase()}
+                                                            {notification.type?.toUpperCase() || 'UNKNOWN'}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -210,37 +213,10 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                     </div>
                                                     <div className="col-sm-8">
                                                         <span className={`badge bg-${getPriorityColor(notification.priority)}`}>
-                                                            {notification.priority.toUpperCase()}
+                                                            {notification.priority?.toUpperCase() || 'NORMAL'}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                {notification.actionUrl && (
-                                                    <div className="row mb-3">
-                                                        <div className="col-sm-4">
-                                                            <strong>Action URL:</strong>
-                                                        </div>
-                                                        <div className="col-sm-8">
-                                                            <a
-                                                                href={notification.actionUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-break"
-                                                            >
-                                                                {notification.actionUrl}
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {notification.actionText && (
-                                                    <div className="row mb-3">
-                                                        <div className="col-sm-4">
-                                                            <strong>Action Text:</strong>
-                                                        </div>
-                                                        <div className="col-sm-8">
-                                                            {notification.actionText}
-                                                        </div>
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -319,7 +295,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                         <strong>Created:</strong>
                                                     </div>
                                                     <div className="col-sm-7">
-                                                        {new Date(notification.createdAt!).toLocaleString()}
+                                                        {notification.createdAt ? new Date(notification.createdAt).toLocaleString() : 'Unknown'}
                                                     </div>
                                                 </div>
                                                 <div className="row mb-3">

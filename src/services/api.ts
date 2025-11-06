@@ -4,7 +4,7 @@ import type { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axio
 // Get API base URL from environment or default
 const getApiBaseUrl = (): string => {
     // For Vite, use import.meta.env instead of process.env
-    return import.meta.env.VITE_API_URL || 'http://localhost:3000/api/admin';
+    return import.meta.env.VITE_API_URL || 'http://localhost:4002/api/admin';
 };
 
 // Create axios instance with base configuration
