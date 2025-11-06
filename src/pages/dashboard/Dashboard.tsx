@@ -36,7 +36,6 @@ const Dashboard: React.FC = () => {
         totalSubscribers: 0,
         totalBlogs: 0,
     });
-    const [recentEnquiries, setRecentEnquiries] = useState<RecentActivity[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -64,36 +63,6 @@ const Dashboard: React.FC = () => {
                 totalBlogs: 25,
             }));
 
-            // Mock enquiries data
-            setRecentEnquiries([
-                {
-                    id: 1,
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    mobile: '+1234567890',
-                    message: 'Interested in premium plan',
-                    type: 'plan',
-                    createdAt: '5 min ago'
-                },
-                {
-                    id: 2,
-                    name: 'Jane Smith',
-                    email: 'jane@example.com',
-                    mobile: '+1987654321',
-                    message: 'Need more information about services',
-                    type: 'general',
-                    createdAt: '10 min ago'
-                },
-                {
-                    id: 3,
-                    name: 'Mike Johnson',
-                    email: 'mike@example.com',
-                    mobile: '+1122334455',
-                    message: 'Custom plan request for enterprise',
-                    type: 'plan',
-                    createdAt: '15 min ago'
-                },
-            ]);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
             showToast({
