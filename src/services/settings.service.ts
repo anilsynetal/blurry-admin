@@ -9,6 +9,12 @@ export interface SMTPConfig {
     fromName: string;
 }
 
+export interface StripeConfig {
+    secretKey: string;
+    publishableKey: string;
+    webhookSecretKey: string;
+}
+
 export interface SettingsResponse {
     status: string;
     message: string;
@@ -46,6 +52,17 @@ export const settingsService = {
 
     updateTermsAndConditions: async (content: string): Promise<SettingsResponse> => {
         const response = await api.put<SettingsResponse>('/v1/settings/terms-and-conditions', { content });
+        return response.data;
+    },
+
+    // Stripe Configuration
+    getStripeConfig: async (): Promise<SettingsResponse> => {
+        const response = await api.get<SettingsResponse>('/v1/settings/stripe');
+        return response.data;
+    },
+
+    updateStripeConfig: async (config: StripeConfig): Promise<SettingsResponse> => {
+        const response = await api.put<SettingsResponse>('/v1/settings/stripe', config);
         return response.data;
     },
 

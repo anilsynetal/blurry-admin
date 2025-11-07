@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { settingsService, SMTPConfig } from '../../services/settings.service';
+import { settingsService, SMTPConfig, StripeConfig } from '../../services/settings.service';
 import { useToast } from '../../context/ToastContext';
 
 interface ApiError {
@@ -28,6 +28,11 @@ const SettingsPage: React.FC = () => {
     const [termsConditions, setTermsConditions] = useState('');
     const [showPrivacyPreview, setShowPrivacyPreview] = useState(false);
     const [showTermsPreview, setShowTermsPreview] = useState(false);
+    const [stripeSettings, setStripeSettings] = useState<StripeConfig>({
+        secretKey: '',
+        publishableKey: '',
+        webhookSecretKey: '',
+    });
 
     useEffect(() => {
         // Delay the API calls to prevent authentication issues on initial load
@@ -69,6 +74,16 @@ const SettingsPage: React.FC = () => {
                 }
             } catch (termsError) {
                 console.warn('Could not fetch terms and conditions:', termsError);
+            }
+
+            // Fetch Stripe Configuration (requires auth)
+            try {
+                const stripeResponse = await settingsService.getStripeConfig();
+                if (stripeResponse.status === 'success' && stripeResponse.data) {
+                    setStripeSettings(stripeResponse.data);
+                }
+            } catch (stripeError) {
+                console.warn('Could not fetch Stripe settings (may require authentication):', stripeError);
             }
         } catch (error) {
             console.error('General error fetching settings:', error);
@@ -155,6 +170,32 @@ const SettingsPage: React.FC = () => {
         }
     };
 
+    const handleStripeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await settingsService.updateStripeConfig(stripeSettings);
+            if (response.status === 'success') {
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: 'Stripe configuration updated successfully!'
+                });
+            }
+        } catch (error) {
+            console.error('Error updating Stripe configuration:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update Stripe configuration'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div>
             <div className="row mb-4">
@@ -211,6 +252,20 @@ const SettingsPage: React.FC = () => {
                                     >
                                         <i className="bx bx-file me-1"></i>
                                         Terms & Conditions
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        type="button"
+                                        className={`nav-link ${activeTab === 'stripe' ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('stripe');
+                                        }}
+                                    >
+                                        <i className="bx bx-credit-card me-1"></i>
+                                        Stripe Configuration
                                     </button>
                                 </li>
                             </ul>
@@ -448,6 +503,183 @@ const SettingsPage: React.FC = () => {
                                                         </button>
                                                     </div>
                                                 </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Stripe Configuration Tab */}
+                                {activeTab === 'stripe' && (
+                                    <div className="tab-pane active">
+                                        <div className="row">
+                                            <div className="col-xl-8">
+                                                <h5 className="mb-3">Stripe Payment Gateway Configuration</h5>
+                                                <p className="text-muted mb-4">Configure your Stripe payment gateway settings for processing payments.</p>
+
+                                                <div className="alert alert-warning" role="alert">
+                                                    <i className="bx bx-info-circle me-2"></i>
+                                                    <strong>Security Notice:</strong> Stripe keys are sensitive information. Secret keys will be masked for security purposes.
+                                                </div>
+
+                                                <form onSubmit={handleStripeSubmit}>
+                                                    <div className="row">
+                                                        <div className="col-md-12">
+                                                            <div className="mb-3">
+                                                                <label htmlFor="stripe-secret-key" className="form-label">
+                                                                    Secret Key <span className="text-danger">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="password"
+                                                                    className="form-control"
+                                                                    id="stripe-secret-key"
+                                                                    value={stripeSettings.secretKey}
+                                                                    onChange={(e) => setStripeSettings({ ...stripeSettings, secretKey: e.target.value })}
+                                                                    placeholder="sk_test_ or sk_live_..."
+                                                                    required
+                                                                />
+                                                                <div className="form-text">
+                                                                    Your Stripe secret key (starts with sk_test_ for test mode or sk_live_ for live mode)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="row">
+                                                        <div className="col-md-12">
+                                                            <div className="mb-3">
+                                                                <label htmlFor="stripe-publishable-key" className="form-label">
+                                                                    Publishable Key <span className="text-danger">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control"
+                                                                    id="stripe-publishable-key"
+                                                                    value={stripeSettings.publishableKey}
+                                                                    onChange={(e) => setStripeSettings({ ...stripeSettings, publishableKey: e.target.value })}
+                                                                    placeholder="pk_test_ or pk_live_..."
+                                                                    required
+                                                                />
+                                                                <div className="form-text">
+                                                                    Your Stripe publishable key (starts with pk_test_ for test mode or pk_live_ for live mode)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="row">
+                                                        <div className="col-md-12">
+                                                            <div className="mb-3">
+                                                                <label htmlFor="stripe-webhook-secret" className="form-label">
+                                                                    Webhook Secret Key
+                                                                </label>
+                                                                <input
+                                                                    type="password"
+                                                                    className="form-control"
+                                                                    id="stripe-webhook-secret"
+                                                                    value={stripeSettings.webhookSecretKey}
+                                                                    onChange={(e) => setStripeSettings({ ...stripeSettings, webhookSecretKey: e.target.value })}
+                                                                    placeholder="whsec_..."
+                                                                />
+                                                                <div className="form-text">
+                                                                    Your Stripe webhook endpoint secret (starts with whsec_) - Optional but recommended for webhook security
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="row">
+                                                        <div className="col-12">
+                                                            <div className="card bg-light">
+                                                                <div className="card-body">
+                                                                    <h6 className="card-title">
+                                                                        <i className="bx bx-info-circle me-1 text-info"></i>
+                                                                        Configuration Guide
+                                                                    </h6>
+                                                                    <ul className="mb-0 small text-muted">
+                                                                        <li><strong>Test Mode:</strong> Use keys starting with sk_test_ and pk_test_ for development</li>
+                                                                        <li><strong>Live Mode:</strong> Use keys starting with sk_live_ and pk_live_ for production</li>
+                                                                        <li><strong>Security:</strong> Never expose your secret key in client-side code</li>
+                                                                        <li><strong>Webhooks:</strong> Configure webhook endpoints in your Stripe dashboard for event handling</li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4">
+                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                            {loading ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="bx bx-save me-1"></i>
+                                                                    Save Stripe Configuration
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div className="col-xl-4">
+                                                <div className="card">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-help-circle me-1"></i>
+                                                            Need Help?
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <p className="small text-muted mb-3">
+                                                            Find your Stripe API keys in your Stripe Dashboard under Developers → API keys.
+                                                        </p>
+                                                        <div className="d-grid gap-2">
+                                                            <a
+                                                                href="https://dashboard.stripe.com/apikeys"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="btn btn-outline-primary btn-sm"
+                                                            >
+                                                                <i className="bx bx-link-external me-1"></i>
+                                                                Open Stripe Dashboard
+                                                            </a>
+                                                            <a
+                                                                href="https://stripe.com/docs/keys"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="btn btn-outline-info btn-sm"
+                                                            >
+                                                                <i className="bx bx-book me-1"></i>
+                                                                API Keys Documentation
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="card mt-3">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-shield-check me-1"></i>
+                                                            Security Status
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="d-flex align-items-center mb-2">
+                                                            <i className={`bx ${stripeSettings.secretKey ? 'bx-check-circle text-success' : 'bx-x-circle text-danger'} me-2`}></i>
+                                                            <span className="small">Secret Key {stripeSettings.secretKey ? 'Configured' : 'Missing'}</span>
+                                                        </div>
+                                                        <div className="d-flex align-items-center mb-2">
+                                                            <i className={`bx ${stripeSettings.publishableKey ? 'bx-check-circle text-success' : 'bx-x-circle text-danger'} me-2`}></i>
+                                                            <span className="small">Publishable Key {stripeSettings.publishableKey ? 'Configured' : 'Missing'}</span>
+                                                        </div>
+                                                        <div className="d-flex align-items-center">
+                                                            <i className={`bx ${stripeSettings.webhookSecretKey ? 'bx-check-circle text-success' : 'bx-info-circle text-warning'} me-2`}></i>
+                                                            <span className="small">Webhook Secret {stripeSettings.webhookSecretKey ? 'Configured' : 'Optional'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
