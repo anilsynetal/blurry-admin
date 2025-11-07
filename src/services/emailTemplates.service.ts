@@ -49,4 +49,9 @@ export const emailTemplatesService = {
         const response = await api.delete(`/v1/email-templates/${name}`);
         return response.data;
     },
+
+    preview: async (name: string, sampleData?: Record<string, any>): Promise<{ status: string; message: string; data: { html: string } }> => {
+        const response = await api.post(`/v1/email-templates/${name}/preview`, { sampleData });
+        return response.data;
+    },
 };

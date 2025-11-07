@@ -245,7 +245,7 @@ const ProfilePage: React.FC = () => {
                             </ul>
 
                             {/* Tab Content */}
-                            <div className="tab-content">
+                            <div className="tab-content1">
                                 {/* Profile Information Tab */}
                                 {activeTab === 'profile' && (
                                     <div className="tab-pane active">

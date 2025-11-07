@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { datePlanTemplatesService, DatePlanTemplate, CreateDatePlanTemplatePayload, UpdateDatePlanTemplatePayload } from '../../services/datePlanTemplates.service';
+import { datePlanTemplatesService, DatePlanTemplate, CreateDatePlanTemplatePayload, UpdateDatePlanTemplatePayload, DatePlanTemplateUser } from '../../services/datePlanTemplates.service';
 import { useToast } from '../../context/ToastContext';
 import Swal from 'sweetalert2';
 
@@ -24,7 +24,18 @@ const DatePlanTemplatesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showUsersModal, setShowUsersModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<DatePlanTemplate | null>(null);
+
+    // Users modal state
+    const [templateUsers, setTemplateUsers] = useState<DatePlanTemplateUser[]>([]);
+    const [usersLoading, setUsersLoading] = useState(false);
+    const [usersPagination, setUsersPagination] = useState({
+        totalRecords: 0,
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: 10
+    });
     const [formData, setFormData] = useState<CreateDatePlanTemplatePayload>({
         title: '',
         description: '',
@@ -223,6 +234,48 @@ const DatePlanTemplatesPage: React.FC = () => {
         setShowEditModal(true);
     };
 
+    const openUsersModal = async (template: DatePlanTemplate) => {
+        setSelectedTemplate(template);
+        setShowUsersModal(true);
+        await fetchTemplateUsers(template._id!);
+    };
+
+    const fetchTemplateUsers = async (templateId: string, page: number = 1) => {
+        try {
+            setUsersLoading(true);
+            const response = await datePlanTemplatesService.getDatePlanTemplateUsers(templateId, {
+                page,
+                limit: usersPagination.pageSize
+            });
+
+            setTemplateUsers(response.data || []);
+            if (response.pagination) {
+                setUsersPagination({
+                    totalRecords: response.pagination.totalRecords,
+                    currentPage: response.pagination.currentPage,
+                    totalPages: response.pagination.totalPages,
+                    pageSize: response.pagination.pageSize
+                });
+            }
+        } catch (error) {
+            console.error('Error fetching template users:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || 'Failed to fetch template users'
+            });
+        } finally {
+            setUsersLoading(false);
+        }
+    };
+
+    const handleUsersPageChange = (page: number) => {
+        if (selectedTemplate?._id) {
+            fetchTemplateUsers(selectedTemplate._id, page);
+        }
+    };
+
     const getImageUrl = (imagePath: string) => {
         if (!imagePath) return "";
         if (imagePath.startsWith("http")) return imagePath;
@@ -271,11 +324,13 @@ const DatePlanTemplatesPage: React.FC = () => {
                             <table className="table table-striped">
                                 <thead>
                                     <tr>
-                                        <th>Image</th>
+                                        <th>Template Image</th>
+                                        <th>Icon</th>
                                         <th>Title</th>
                                         <th>Type</th>
                                         <th>Cost Type</th>
                                         <th>Sort Order</th>
+                                        <th>User Count</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -285,13 +340,27 @@ const DatePlanTemplatesPage: React.FC = () => {
                                         templates.map((template) => (
                                             <tr key={template._id}>
                                                 <td>
-                                                    {template.templateImage && (
+                                                    {template.templateImage ? (
                                                         <img
                                                             src={getImageUrl(template.templateImage)}
                                                             alt={template.title}
                                                             style={{ width: '50px', height: '50px', objectFit: 'cover' }}
                                                             className="rounded"
                                                         />
+                                                    ) : (
+                                                        <span className="text-muted">No image</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {template.icon ? (
+                                                        <img
+                                                            src={getImageUrl(template.icon)}
+                                                            alt={`${template.title} icon`}
+                                                            style={{ width: '30px', height: '30px', objectFit: 'cover' }}
+                                                            className="rounded"
+                                                        />
+                                                    ) : (
+                                                        <span className="text-muted">No icon</span>
                                                     )}
                                                 </td>
                                                 <td>{template.title}</td>
@@ -304,6 +373,14 @@ const DatePlanTemplatesPage: React.FC = () => {
                                                     </span>
                                                 </td>
                                                 <td>{template.sortOrder}</td>
+                                                <td>
+                                                    <div className="d-flex align-items-center">
+                                                        <span className="badge bg-primary me-2">
+                                                            {template.userCount || 0}
+                                                        </span>
+                                                        <small className="text-muted">users</small>
+                                                    </div>
+                                                </td>
                                                 <td>
                                                     <span className={`badge ${template.isActive ? 'bg-success' : 'bg-danger'}`}>
                                                         {template.isActive ? 'Active' : 'Inactive'}
@@ -325,6 +402,12 @@ const DatePlanTemplatesPage: React.FC = () => {
                                                                 <i className="bx bx-edit-alt me-1"></i> Edit
                                                             </button>
                                                             <button
+                                                                className="dropdown-item text-info"
+                                                                onClick={() => openUsersModal(template)}
+                                                            >
+                                                                <i className="bx bx-group me-1"></i> View Users
+                                                            </button>
+                                                            <button
                                                                 className="dropdown-item"
                                                                 onClick={() => handleStatusToggle(template)}
                                                             >
@@ -344,7 +427,7 @@ const DatePlanTemplatesPage: React.FC = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="text-center">No date plan templates found</td>
+                                            <td colSpan={9} className="text-center">No date plan templates found</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -572,21 +655,49 @@ const DatePlanTemplatesPage: React.FC = () => {
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label">Template Image</label>
+                                            {selectedTemplate?.templateImage && (
+                                                <div className="mb-2">
+                                                    <small className="text-muted">Current image:</small>
+                                                    <div>
+                                                        <img
+                                                            src={getImageUrl(selectedTemplate.templateImage)}
+                                                            alt="Current template image"
+                                                            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                                            className="rounded border"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                             <input
                                                 type="file"
                                                 className="form-control"
                                                 accept="image/*"
                                                 onChange={(e) => setTemplateImage(e.target.files?.[0] || null)}
                                             />
+                                            <small className="text-muted">Leave empty to keep current image</small>
                                         </div>
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label">Icon Image</label>
+                                            {selectedTemplate?.icon && (
+                                                <div className="mb-2">
+                                                    <small className="text-muted">Current icon:</small>
+                                                    <div>
+                                                        <img
+                                                            src={getImageUrl(selectedTemplate.icon)}
+                                                            alt="Current icon image"
+                                                            style={{ width: '60px', height: '60px', objectFit: 'cover' }}
+                                                            className="rounded border"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                             <input
                                                 type="file"
                                                 className="form-control"
                                                 accept="image/*"
                                                 onChange={(e) => setIconImage(e.target.files?.[0] || null)}
                                             />
+                                            <small className="text-muted">Leave empty to keep current icon</small>
                                         </div>
                                     </div>
                                 </form>
@@ -609,6 +720,176 @@ const DatePlanTemplatesPage: React.FC = () => {
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? 'Updating...' : 'Update Template'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Users Modal */}
+            {showUsersModal && selectedTemplate && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-xl">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bx bx-group me-2"></i>
+                                    Users who used "{selectedTemplate.title}"
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => {
+                                        setShowUsersModal(false);
+                                        setSelectedTemplate(null);
+                                        setTemplateUsers([]);
+                                    }}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                {usersLoading ? (
+                                    <div className="text-center py-4">
+                                        <div className="spinner-border text-primary" role="status">
+                                            <span className="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p className="text-muted mt-2">Loading users...</p>
+                                    </div>
+                                ) : templateUsers.length > 0 ? (
+                                    <>
+                                        <div className="table-responsive">
+                                            <table className="table table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>User</th>
+                                                        <th>Email</th>
+                                                        <th>Usage Count</th>
+                                                        <th>Last Used</th>
+                                                        <th>Total Plans</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {templateUsers.map((user) => (
+                                                        <tr key={user._id}>
+                                                            <td>
+                                                                <div className="d-flex align-items-center">
+                                                                    <div className="avatar avatar-sm me-3">
+                                                                        {user.profilePicture ? (
+                                                                            <img
+                                                                                src={user.profilePicture}
+                                                                                alt={user.name}
+                                                                                className="rounded-circle"
+                                                                            />
+                                                                        ) : (
+                                                                            <span className="avatar-initial rounded-circle bg-primary">
+                                                                                {user.name.charAt(0).toUpperCase()}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    <div>
+                                                                        <h6 className="mb-0">{user.name}</h6>
+                                                                        <small className="text-muted">ID: {user._id}</small>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{user.email}</td>
+                                                            <td>
+                                                                <span className="badge bg-primary">
+                                                                    {user.usageCount} times
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div>
+                                                                    <span>{new Date(user.lastUsed).toLocaleDateString()}</span>
+                                                                    <div>
+                                                                        <small className="text-muted">
+                                                                            {new Date(user.lastUsed).toLocaleTimeString()}
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <span className="badge bg-info">
+                                                                    {user.totalPlans} plans
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <span className={`badge ${user.isActive ? 'bg-success' : 'bg-danger'}`}>
+                                                                    {user.isActive ? 'Active' : 'Inactive'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Pagination */}
+                                        {usersPagination.totalPages > 1 && (
+                                            <div className="d-flex justify-content-between align-items-center mt-3">
+                                                <small className="text-muted">
+                                                    Showing {((usersPagination.currentPage - 1) * usersPagination.pageSize) + 1} to{' '}
+                                                    {Math.min(usersPagination.currentPage * usersPagination.pageSize, usersPagination.totalRecords)} of{' '}
+                                                    {usersPagination.totalRecords} users
+                                                </small>
+                                                <nav>
+                                                    <ul className="pagination pagination-sm mb-0">
+                                                        <li className={`page-item ${usersPagination.currentPage === 1 ? 'disabled' : ''}`}>
+                                                            <button
+                                                                className="page-link"
+                                                                onClick={() => handleUsersPageChange(usersPagination.currentPage - 1)}
+                                                                disabled={usersPagination.currentPage === 1}
+                                                            >
+                                                                Previous
+                                                            </button>
+                                                        </li>
+                                                        {Array.from({ length: Math.min(5, usersPagination.totalPages) }, (_, i) => {
+                                                            const page = i + 1;
+                                                            return (
+                                                                <li key={page} className={`page-item ${usersPagination.currentPage === page ? 'active' : ''}`}>
+                                                                    <button
+                                                                        className="page-link"
+                                                                        onClick={() => handleUsersPageChange(page)}
+                                                                    >
+                                                                        {page}
+                                                                    </button>
+                                                                </li>
+                                                            );
+                                                        })}
+                                                        <li className={`page-item ${usersPagination.currentPage === usersPagination.totalPages ? 'disabled' : ''}`}>
+                                                            <button
+                                                                className="page-link"
+                                                                onClick={() => handleUsersPageChange(usersPagination.currentPage + 1)}
+                                                                disabled={usersPagination.currentPage === usersPagination.totalPages}
+                                                            >
+                                                                Next
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </nav>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="text-center py-4">
+                                        <i className="bx bx-group display-4 text-muted"></i>
+                                        <h6 className="text-muted">No Users Found</h6>
+                                        <p className="text-muted">No users have used this date plan template yet.</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setShowUsersModal(false);
+                                        setSelectedTemplate(null);
+                                        setTemplateUsers([]);
+                                    }}
+                                >
+                                    Close
                                 </button>
                             </div>
                         </div>

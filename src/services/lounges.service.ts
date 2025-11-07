@@ -17,6 +17,7 @@ export interface Lounge extends BaseEntity {
     tags: string[];
     isActive: boolean;
     sortOrder: number;
+    userCount?: number;
     createdBy?: string;
     createdByIp?: string;
     updatedBy?: string;

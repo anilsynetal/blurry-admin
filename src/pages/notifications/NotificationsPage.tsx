@@ -82,14 +82,7 @@ const NotificationsPage: React.FC = () => {
                 search: searchTerm
             };
 
-            console.log('Fetching notifications with params:', queryParams);
-
             const response = await notificationsService.getNotifications(queryParams);
-
-            console.log('Notifications response:', response);
-            console.log('Notifications data:', response.data);
-            console.log('Notifications pagination:', response.pagination);
-
             const notifications = response.data || [];
             setNotifications(notifications);
 
@@ -107,14 +100,12 @@ const NotificationsPage: React.FC = () => {
                 // or if we're on a page that doesn't exist, go back to page 1
                 const currentPage = filters.page || 1;
                 if (notifications.length === 0 && paginationData.totalRecords === 0 && currentPage > 1) {
-                    console.log('No notifications found on page', currentPage, 'redirecting to page 1');
                     setFilters(prev => ({ ...prev, page: 1 }));
                     return;
                 }
 
                 // If we're on a page beyond the total pages, go to the last page
                 if (paginationData.totalPages > 0 && currentPage > paginationData.totalPages) {
-                    console.log('Page', currentPage, 'exceeds total pages', paginationData.totalPages, 'redirecting to last page');
                     setFilters(prev => ({ ...prev, page: paginationData.totalPages }));
                     return;
                 }
@@ -151,13 +142,20 @@ const NotificationsPage: React.FC = () => {
         setFilters(prev => ({ ...prev, [key]: value, page: 1 }));
     };
 
+    const handleClearAllFilters = () => {
+        setFilters({
+            page: 1,
+            limit: 25,
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+        });
+        setSearchTerm('');
+    };
+
     const handlePageChange = (page: number) => {
-        console.log('Changing page to:', page);
-        console.log('Current filters:', filters);
         setPageChanging(true);
         setFilters(prev => {
             const newFilters = { ...prev, page };
-            console.log('New filters:', newFilters);
             return newFilters;
         });
     };
@@ -404,7 +402,7 @@ const NotificationsPage: React.FC = () => {
                 }
                 filters={
                     <div className="row">
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <select
                                 className="form-select form-select-sm"
                                 value={filters.type || ''}
@@ -419,7 +417,7 @@ const NotificationsPage: React.FC = () => {
                                 <option value="system">System</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <select
                                 className="form-select form-select-sm"
                                 value={filters.priority || ''}
@@ -431,7 +429,7 @@ const NotificationsPage: React.FC = () => {
                                 <option value="low">Low</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <select
                                 className="form-select form-select-sm"
                                 value={filters.isBroadcast?.toString() || ''}
@@ -443,7 +441,7 @@ const NotificationsPage: React.FC = () => {
                                 <option value="false">Targeted</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <select
                                 className="form-select form-select-sm"
                                 value={filters.push?.toString() || ''}
@@ -454,6 +452,19 @@ const NotificationsPage: React.FC = () => {
                                 <option value="true">Push Enabled</option>
                                 <option value="false">Push Disabled</option>
                             </select>
+                        </div>
+                        <div className="col-md-4">
+                            <div className="d-flex gap-2">
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary btn-sm"
+                                    onClick={handleClearAllFilters}
+                                    title="Clear all filters and search"
+                                >
+                                    <i className="bx bx-refresh me-1"></i>
+                                    Clear All Filters
+                                </button>
+                            </div>
                         </div>
                     </div>
                 }

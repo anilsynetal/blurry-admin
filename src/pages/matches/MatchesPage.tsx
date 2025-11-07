@@ -8,7 +8,6 @@ import {
     ActionBar,
     TablePagination,
     StatusBadge,
-    ActionDropdown,
     PageHeader
 } from '../../components/common';
 
@@ -102,88 +101,6 @@ const MatchesPage: React.FC = () => {
 
     const handleFilterChange = (key: keyof MatchFilters, value: string) => {
         setFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    const handleUpdateStatus = async (match: Match, newStatus: Match['status']) => {
-        try {
-            const result = await Swal.fire({
-                title: 'Confirm Action',
-                text: `Are you sure you want to change the match status to ${newStatus}?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: `Yes, update to ${newStatus}`,
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                await matchService.updateMatchStatus(match._id, { status: newStatus });
-                fetchMatches(pagination.currentPage);
-                fetchStats();
-                showToast({
-                    type: 'success',
-                    title: 'Success',
-                    message: `Match status updated to ${newStatus}`
-                });
-            }
-        } catch (error) {
-            console.error('Error updating match status:', error);
-            const apiError = error as any;
-            showToast({
-                type: 'error',
-                title: 'Error',
-                message: apiError.response?.data?.message || 'Failed to update match status'
-            });
-        }
-    };
-
-    const handleToggleBlock = async (match: Match) => {
-        try {
-            const action = match.isBlocked ? 'unblock' : 'block';
-            const reason = action === 'block' ? await Swal.fire({
-                title: 'Block Reason',
-                input: 'text',
-                inputLabel: 'Please provide a reason for blocking this match',
-                inputValidator: (value) => {
-                    if (!value) {
-                        return 'Block reason is required!';
-                    }
-                    return null;
-                }
-            }) : null;
-
-            if (action === 'block' && (!reason || reason.dismiss)) return;
-
-            const result = await Swal.fire({
-                title: 'Confirm Action',
-                text: `Are you sure you want to ${action} this match?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: `Yes, ${action}`,
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                await matchService.toggleMatchBlock(match._id, {
-                    isBlocked: !match.isBlocked,
-                    blockReason: reason?.value
-                });
-                fetchMatches(pagination.currentPage);
-                fetchStats();
-                showToast({
-                    type: 'success',
-                    title: 'Success',
-                    message: `Match ${action}ed successfully`
-                });
-            }
-        } catch (error) {
-            console.error('Error toggling match block:', error);
-            const apiError = error as any;
-            showToast({
-                type: 'error',
-                title: 'Error',
-                message: apiError.response?.data?.message || 'Failed to update match block status'
-            });
-        }
     };
 
     const getStatusBadgeVariant = (status: string) => {
@@ -402,7 +319,6 @@ const MatchesPage: React.FC = () => {
                                             <th>Matched</th>
                                             <th>Message</th>
                                             <th>Created</th>
-                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -460,31 +376,6 @@ const MatchesPage: React.FC = () => {
                                                     <small className="text-muted">
                                                         {new Date(match.createdAt).toLocaleDateString()}
                                                     </small>
-                                                </td>
-                                                <td>
-                                                    <ActionDropdown
-                                                        onEdit={() => {/* Could open modal for details */ }}
-                                                        additionalActions={[
-                                                            {
-                                                                label: 'Approve',
-                                                                icon: 'bx-check',
-                                                                onClick: () => handleUpdateStatus(match, 'approved'),
-                                                                variant: match.status === 'approved' ? 'success' : ''
-                                                            },
-                                                            {
-                                                                label: 'Deny',
-                                                                icon: 'bx-x',
-                                                                onClick: () => handleUpdateStatus(match, 'denied'),
-                                                                variant: 'danger'
-                                                            },
-                                                            {
-                                                                label: match.isBlocked ? 'Unblock' : 'Block',
-                                                                icon: match.isBlocked ? 'bx-unlock' : 'bx-lock',
-                                                                onClick: () => handleToggleBlock(match),
-                                                                variant: match.isBlocked ? 'success' : 'warning'
-                                                            }
-                                                        ]}
-                                                    />
                                                 </td>
                                             </tr>
                                         ))}

@@ -25,6 +25,7 @@ const EmailTemplatesPage: React.FC = () => {
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
     const [formData, setFormData] = useState({
         name: '',
@@ -34,6 +35,8 @@ const EmailTemplatesPage: React.FC = () => {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [previewHtml, setPreviewHtml] = useState<string>('');
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     useEffect(() => {
         fetchTemplates();
@@ -183,6 +186,30 @@ const EmailTemplatesPage: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handlePreviewTemplate = async (template: EmailTemplate) => {
+        setSelectedTemplate(template);
+        setPreviewLoading(true);
+        setShowPreviewModal(true);
+
+        try {
+            const response = await emailTemplatesService.preview(template.name);
+            if (response.status === 'success') {
+                setPreviewHtml(response.data.html);
+            }
+        } catch (error) {
+            console.error('Error previewing email template:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to preview email template'
+            });
+            setShowPreviewModal(false);
+        } finally {
+            setPreviewLoading(false);
+        }
     }; const openEditModal = (template: EmailTemplate) => {
         setSelectedTemplate(template);
         setFormData({
@@ -205,6 +232,7 @@ const EmailTemplatesPage: React.FC = () => {
         });
         setIsSubmitting(false);
         clearFieldErrors();
+        setPreviewHtml('');
     };
 
     const formatDate = (dateString?: string) => {
@@ -324,7 +352,10 @@ const EmailTemplatesPage: React.FC = () => {
                                                                 <i className="bx bx-dots-vertical-rounded"></i>
                                                             </button>
                                                             <div className="dropdown-menu">
-                                                                <button className="dropdown-item">
+                                                                <button
+                                                                    className="dropdown-item"
+                                                                    onClick={() => handlePreviewTemplate(template)}
+                                                                >
                                                                     <i className="bx bx-show-alt me-1"></i> Preview
                                                                 </button>
                                                                 <button
@@ -355,7 +386,7 @@ const EmailTemplatesPage: React.FC = () => {
             ) : (
                 <div className="row">
                     {templates.map((template) => (
-                        <div key={template._id} className="col-xl-4 col-lg-6 col-md-6">
+                        <div key={template._id} className="col-xl-4 col-lg-6 col-md-6 mb-4">
                             <div className="card h-100">
                                 <div className="card-body">
                                     <div className="d-flex justify-content-between align-items-start mb-3">
@@ -372,7 +403,10 @@ const EmailTemplatesPage: React.FC = () => {
                                                 <i className="bx bx-dots-vertical-rounded"></i>
                                             </button>
                                             <div className="dropdown-menu">
-                                                <button className="dropdown-item">
+                                                <button
+                                                    className="dropdown-item"
+                                                    onClick={() => handlePreviewTemplate(template)}
+                                                >
                                                     <i className="bx bx-show-alt me-1"></i> Preview
                                                 </button>
                                                 <button
@@ -669,11 +703,105 @@ const EmailTemplatesPage: React.FC = () => {
                 </div>
             )}
 
+            {/* Preview Template Modal */}
+            {showPreviewModal && selectedTemplate && (
+                <div className="modal fade show" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                    <div className="modal-dialog modal-xl">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">
+                                    <i className="bx bx-show-alt me-2"></i>
+                                    Preview: {selectedTemplate.name}
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => {
+                                        setShowPreviewModal(false);
+                                        setSelectedTemplate(null);
+                                        setPreviewHtml('');
+                                    }}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="row mb-3">
+                                    <div className="col-md-6">
+                                        <strong>Subject:</strong> {selectedTemplate.subject}
+                                    </div>
+                                    <div className="col-md-6">
+                                        <span className={`badge ${selectedTemplate.isActive ? 'bg-success' : 'bg-secondary'}`}>
+                                            {selectedTemplate.isActive ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="alert alert-info">
+                                    <i className="bx bx-info-circle me-2"></i>
+                                    This preview shows the template with sample data. Variables like <code>{`{{name}}`}</code>, <code>{`{{email}}`}</code>, etc. are replaced with placeholder values.
+                                </div>
+
+                                {previewLoading ? (
+                                    <div className="d-flex justify-content-center align-items-center py-5">
+                                        <div className="spinner-border text-primary" role="status">
+                                            <span className="visually-hidden">Loading preview...</span>
+                                        </div>
+                                        <span className="ms-2">Loading preview...</span>
+                                    </div>
+                                ) : (
+                                    <div className="border rounded p-3" style={{ minHeight: '400px', backgroundColor: '#f8f9fa' }}>
+                                        <div
+                                            dangerouslySetInnerHTML={{ __html: previewHtml }}
+                                            style={{
+                                                backgroundColor: 'white',
+                                                padding: '20px',
+                                                borderRadius: '4px',
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => {
+                                        setShowPreviewModal(false);
+                                        setSelectedTemplate(null);
+                                        setPreviewHtml('');
+                                    }}
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        setShowPreviewModal(false);
+                                        openEditModal(selectedTemplate);
+                                        setPreviewHtml('');
+                                    }}
+                                >
+                                    <i className="bx bx-edit-alt me-1"></i>
+                                    Edit Template
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Custom Styles */}
             <style>{`
                 /* Required field indicator */
                 .text-danger {
                     color: #dc3545 !important;
+                }
+                
+                /* Preview modal styling */
+                .modal-xl .modal-body {
+                    max-height: 70vh;
+                    overflow-y: auto;
                 }
             `}</style>
         </div>

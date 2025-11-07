@@ -2,7 +2,7 @@ import axios, { AxiosResponse, AxiosError } from 'axios';
 
 // Create axios instance with base configuration
 const baseURL = (import.meta as any).env.VITE_API_URL || 'http://localhost:4002/api/admin';
-console.log('API Base URL:', baseURL); // Debug log
+// console.log('API Base URL:', baseURL); // Debug log
 
 const api = axios.create({
     baseURL: baseURL,

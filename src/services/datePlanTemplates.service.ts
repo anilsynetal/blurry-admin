@@ -18,6 +18,8 @@ export interface DatePlanTemplate extends BaseEntity {
     icon?: string;
     isActive?: boolean;
     sortOrder?: number;
+    userCount?: number;
+    totalUsage?: number;
     createdBy?: string;
     createdByIp?: string;
     updatedBy?: string;
@@ -54,6 +56,24 @@ export interface DatePlanTemplateStatsResponse {
     templatesByCostType: Record<string, number>;
 }
 
+export interface DatePlanTemplateUser {
+    _id: string;
+    name: string;
+    email: string;
+    profilePicture?: string;
+    isActive: boolean;
+    usageCount: number;
+    lastUsed: string;
+    totalPlans: number;
+    recentPlans: Array<{
+        _id: string;
+        description: string;
+        proposedDate: string;
+        status: string;
+        createdAt: string;
+    }>;
+}
+
 class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
     constructor() {
         super({
@@ -80,7 +100,11 @@ class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
      * Create new date plan template with image uploads
      */
     async createDatePlanTemplate(data: CreateDatePlanTemplatePayload, images?: { templateImage?: File; iconImage?: File }): Promise<ApiResponse<DatePlanTemplate>> {
-        if (images && (images.templateImage || images.iconImage)) {
+        // Check if there are actual files to upload
+        const hasTemplateImage = images?.templateImage instanceof File;
+        const hasIconImage = images?.iconImage instanceof File;
+
+        if (hasTemplateImage || hasIconImage) {
             const formData = new FormData();
 
             // Add template data
@@ -90,12 +114,12 @@ class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
                 }
             });
 
-            // Add images
-            if (images.templateImage) {
-                formData.append('datePlanTemplateImage', images.templateImage);
+            // Add images only if they are actual File objects
+            if (hasTemplateImage) {
+                formData.append('datePlanTemplateImage', images!.templateImage!);
             }
-            if (images.iconImage) {
-                formData.append('iconImage', images.iconImage);
+            if (hasIconImage) {
+                formData.append('iconImage', images!.iconImage!);
             }
 
             return this.uploadFile(this.baseEndpoint, formData);
@@ -108,7 +132,11 @@ class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
      * Update date plan template with optional image uploads
      */
     async updateDatePlanTemplate(id: string, data: UpdateDatePlanTemplatePayload, images?: { templateImage?: File; iconImage?: File }): Promise<ApiResponse<DatePlanTemplate>> {
-        if (images && (images.templateImage || images.iconImage)) {
+        // Check if there are actual files to upload
+        const hasTemplateImage = images?.templateImage instanceof File;
+        const hasIconImage = images?.iconImage instanceof File;
+
+        if (hasTemplateImage || hasIconImage) {
             const formData = new FormData();
 
             // Add template data
@@ -118,12 +146,12 @@ class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
                 }
             });
 
-            // Add images
-            if (images.templateImage) {
-                formData.append('datePlanTemplateImage', images.templateImage);
+            // Add images only if they are actual File objects
+            if (hasTemplateImage) {
+                formData.append('datePlanTemplateImage', images!.templateImage!);
             }
-            if (images.iconImage) {
-                formData.append('iconImage', images.iconImage);
+            if (hasIconImage) {
+                formData.append('iconImage', images!.iconImage!);
             }
 
             return this.uploadFile(`${this.baseEndpoint}/${id}`, formData);
@@ -151,6 +179,16 @@ class DatePlanTemplatesService extends BaseService<DatePlanTemplate> {
      */
     async getDatePlanTemplateStats(): Promise<ApiResponse<DatePlanTemplateStatsResponse>> {
         const response = await api.get<ApiResponse<DatePlanTemplateStatsResponse>>(`${this.baseEndpoint}/stats`);
+        return this.handleResponse(response);
+    }
+
+    /**
+     * Get users who used a specific date plan template
+     */
+    async getDatePlanTemplateUsers(templateId: string, params: QueryParams = {}): Promise<ApiListResponse<DatePlanTemplateUser>> {
+        const queryString = this.buildQueryString(params);
+        const url = `${this.baseEndpoint}/${templateId}/users${queryString ? `?${queryString}` : ''}`;
+        const response = await api.get<ApiListResponse<DatePlanTemplateUser>>(url);
         return this.handleResponse(response);
     }
 }

@@ -25,11 +25,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     // Initialize layout effects
     useEffect(() => {
-        console.log('Layout effect - sidebarCollapsed:', state.sidebarCollapsed);
+        // console.log('Layout effect - sidebarCollapsed:', state.sidebarCollapsed);
         const htmlElement = document.documentElement;
         const bodyElement = document.body;
         const isMobileView = isMobile();
-        console.log('Layout effect - isMobile:', isMobileView);
+        // console.log('Layout effect - isMobile:', isMobileView);
 
         // Base classes
         let htmlClassName = 'light-style layout-menu-fixed';
@@ -40,7 +40,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             if (state.sidebarCollapsed) {
                 htmlClassName += ' layout-menu-expanded';
                 bodyClassName += ' layout-menu-expanded';
-                console.log('Mobile: Setting layout-menu-expanded');
+                //  console.log('Mobile: Setting layout-menu-expanded');
             } else {
                 console.log('Mobile: Menu expanded (normal)');
             }
@@ -49,9 +49,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             if (state.sidebarCollapsed) {
                 htmlClassName += ' layout-menu-collapsed';
                 bodyClassName += ' layout-menu-collapsed';
-                console.log('Desktop: Setting layout-menu-collapsed');
+                // console.log('Desktop: Setting layout-menu-collapsed');
             } else {
-                console.log('Desktop: Menu expanded (normal)');
+                // console.log('Desktop: Menu expanded (normal)');
             }
         }
 
@@ -63,8 +63,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
         htmlElement.setAttribute('data-assets-path', '/assets');
         htmlElement.setAttribute('data-template', 'vertical-menu-template-free');
 
-        console.log('Applied HTML classes:', htmlClassName);
-        console.log('Applied Body classes:', bodyElement.className);
+        // console.log('Applied HTML classes:', htmlClassName);
+        // console.log('Applied Body classes:', bodyElement.className);
     }, [state.sidebarCollapsed]);
 
     // Handle window resize
@@ -82,7 +82,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
     // Handle menu toggle
     const handleMenuToggle = () => {
-        console.log('Toggle sidebar clicked. Current state:', state.sidebarCollapsed);
+        //  console.log('Toggle sidebar clicked. Current state:', state.sidebarCollapsed);
         dispatch({ type: 'TOGGLE_SIDEBAR' });
     };
 

@@ -24,10 +24,10 @@ export interface LoginResponse {
 
 export const authService = {
     login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-        console.log('Attempting login with:', credentials);
-        console.log('API base URL:', api.defaults.baseURL);
+        // console.log('Attempting login with:', credentials);
+        // console.log('API base URL:', api.defaults.baseURL);
         const response = await api.post<LoginResponse>('/v1/auth/login', credentials);
-        console.log('Login response:', response);
+        // console.log('Login response:', response);
         return response.data;
     },
 

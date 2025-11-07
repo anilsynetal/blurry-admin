@@ -429,6 +429,7 @@ const LoungesPage: React.FC = () => {
                                             <th>Lounge</th>
                                             <th>Tags</th>
                                             <th>Sort Order</th>
+                                            <th>User Count</th>
                                             <th>Status</th>
                                             <th>Created</th>
                                             <th>Actions</th>
@@ -487,6 +488,14 @@ const LoungesPage: React.FC = () => {
                                                     <span className="badge bg-info">
                                                         {lounge.sortOrder || 0}
                                                     </span>
+                                                </td>
+                                                <td>
+                                                    <div className="d-flex align-items-center">
+                                                        <span className="badge bg-primary me-2">
+                                                            {lounge.userCount || 0}
+                                                        </span>
+                                                        <small className="text-muted">users</small>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <StatusBadge status={lounge.isActive ?? false} />

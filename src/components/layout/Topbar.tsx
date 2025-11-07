@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../../context/SimpleAdminContext';
 import { authService } from '../../services/authService';
+import { adminNotificationsService, AdminNotificationStats } from '../../services/adminNotifications.service';
+import { useToast } from '../../context/ToastContext';
 import { Link } from 'react-router-dom';
 
 interface TopbarProps {
@@ -9,10 +11,27 @@ interface TopbarProps {
 
 const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
     const { state, dispatch } = useAdmin();
+    const { showToast } = useToast();
     const [showNotifications, setShowNotifications] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [notificationStats, setNotificationStats] = useState<AdminNotificationStats | null>(null);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
     const notificationRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLLIElement>(null);
+
+    // Fetch notifications on component mount and set up polling
+    useEffect(() => {
+        fetchNotifications();
+
+        // Poll for new notifications every 30 seconds
+        const pollInterval = setInterval(() => {
+            fetchNotifications();
+        }, 30000);
+
+        return () => {
+            clearInterval(pollInterval);
+        };
+    }, []);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -30,6 +49,90 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    // Fetch notifications from API
+    const fetchNotifications = async () => {
+        try {
+            setLoadingNotifications(true);
+            const response = await adminNotificationsService.getHeaderNotifications(5);
+            if (response.status === 'success') {
+                setNotificationStats(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            // Use mock data as fallback
+            setNotificationStats({
+                totalNotifications: 0,
+                unreadCount: 0,
+                recentNotifications: []
+            });
+        } finally {
+            setLoadingNotifications(false);
+        }
+    };
+
+    // Mark notification as read
+    const handleMarkAsRead = async (notificationId: string, event: React.MouseEvent) => {
+        event.stopPropagation();
+        try {
+            await adminNotificationsService.markAsRead(notificationId);
+            // Refresh notifications
+            await fetchNotifications();
+            showToast({
+                type: 'success',
+                title: 'Success',
+                message: 'Notification marked as read'
+            });
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to mark notification as read'
+            });
+        }
+    };
+
+    // Mark all notifications as read
+    const handleMarkAllAsRead = async () => {
+        try {
+            await adminNotificationsService.markAllAsRead();
+            await fetchNotifications();
+            showToast({
+                type: 'success',
+                title: 'Success',
+                message: 'All notifications marked as read'
+            });
+        } catch (error) {
+            console.error('Error marking all notifications as read:', error);
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to mark notifications as read'
+            });
+        }
+    };
+
+    // Delete notification
+    const handleDeleteNotification = async (notificationId: string, event: React.MouseEvent) => {
+        event.stopPropagation();
+        try {
+            await adminNotificationsService.deleteNotification(notificationId);
+            await fetchNotifications();
+            showToast({
+                type: 'success',
+                title: 'Success',
+                message: 'Notification deleted'
+            });
+        } catch (error) {
+            console.error('Error deleting notification:', error);
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'Failed to delete notification'
+            });
+        }
+    };
 
     const handleLogout = async () => {
         try {
@@ -64,7 +167,7 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                         className="nav-item nav-link px-0 me-xl-4 btn btn-link border-0"
                         onClick={(e) => {
                             e.preventDefault();
-                            console.log('Mobile menu button clicked in topbar');
+                            //    console.log('Mobile menu button clicked in topbar');
                             toggleSidebar();
                         }}
                         style={{
@@ -88,7 +191,7 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                     onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        console.log('Notification button clicked, current state:', showNotifications);
+                                        //    console.log('Notification button clicked, current state:', showNotifications);
                                         setShowNotifications(!showNotifications);
                                     }}
                                     style={{
@@ -108,22 +211,24 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                     }}
                                 >
                                     <i className="bx bx-bell bx-tada icon-lg" style={{ fontSize: '20px' }}></i>
-                                    <span
-                                        className="badge bg-danger rounded-pill position-absolute"
-                                        style={{
-                                            top: '2px',
-                                            right: '2px',
-                                            fontSize: '10px',
-                                            minWidth: '18px',
-                                            height: '18px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            animation: 'pulse 2s infinite'
-                                        }}
-                                    >
-                                        3
-                                    </span>
+                                    {notificationStats && notificationStats.unreadCount > 0 && (
+                                        <span
+                                            className="badge bg-danger rounded-pill position-absolute"
+                                            style={{
+                                                top: '2px',
+                                                right: '2px',
+                                                fontSize: '10px',
+                                                minWidth: '18px',
+                                                height: '18px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                animation: 'pulse 2s infinite'
+                                            }}
+                                        >
+                                            {notificationStats.unreadCount}
+                                        </span>
+                                    )}
                                 </button>
 
                                 {showNotifications && (
@@ -141,134 +246,131 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                             <div className="d-flex justify-content-between align-items-center">
                                                 <h6 className="m-0 fw-bold">Notifications</h6>
                                                 <div className="d-flex align-items-center">
-                                                    <span className="badge bg-primary rounded-pill me-2">3</span>
-                                                    <button className="btn btn-sm btn-outline-primary" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                                                    {notificationStats && notificationStats.unreadCount > 0 && (
+                                                        <span className="badge bg-primary rounded-pill me-2">
+                                                            {notificationStats.unreadCount}
+                                                        </span>
+                                                    )}
+                                                    <button
+                                                        className="btn btn-sm btn-outline-primary"
+                                                        style={{ fontSize: '11px', padding: '2px 8px' }}
+                                                        onClick={handleMarkAllAsRead}
+                                                        disabled={!notificationStats || notificationStats.unreadCount === 0}
+                                                    >
                                                         Mark all read
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
                                         <div className="notifications-container">
-                                            <div
-                                                className="notification-item p-3 border-bottom position-relative"
-                                                style={notificationItemStyle}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                                                    e.currentTarget.style.borderLeft = '3px solid #696cff';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '';
-                                                    e.currentTarget.style.borderLeft = '3px solid transparent';
-                                                }}
-                                            >
-                                                <div className="d-flex">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <div className="avatar avatar-sm">
-                                                            <div className="avatar-initial bg-success rounded-circle">
-                                                                <i className="bx bx-user-plus text-white"></i>
+                                            {loadingNotifications ? (
+                                                <div className="text-center p-4">
+                                                    <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                                        <span className="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <p className="text-muted mt-2 mb-0" style={{ fontSize: '12px' }}>Loading notifications...</p>
+                                                </div>
+                                            ) : notificationStats && notificationStats.recentNotifications.length > 0 ? (
+                                                notificationStats.recentNotifications.map((notification) => (
+                                                    <div
+                                                        key={notification._id}
+                                                        className={`notification-item p-3 border-bottom position-relative ${!notification.isRead ? 'bg-light' : ''}`}
+                                                        style={notificationItemStyle}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                                            e.currentTarget.style.borderLeft = '3px solid #696cff';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.backgroundColor = notification.isRead ? '' : '#f8f9fa';
+                                                            e.currentTarget.style.borderLeft = '3px solid transparent';
+                                                        }}
+                                                    >
+                                                        <div className="d-flex">
+                                                            <div className="flex-shrink-0 me-3">
+                                                                <div className="avatar avatar-sm">
+                                                                    <div className={`avatar-initial bg-${adminNotificationsService.getNotificationColor(notification.type)} rounded-circle`}>
+                                                                        <i className={`bx ${adminNotificationsService.getNotificationIcon(notification.type)} text-white`}></i>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-grow-1">
+                                                                <div className="d-flex justify-content-between align-items-start">
+                                                                    <h6 className="mb-1 fw-semibold" style={{ fontSize: '14px' }}>
+                                                                        {notification.title}
+                                                                    </h6>
+                                                                    {!notification.isRead && (
+                                                                        <span
+                                                                            className="badge bg-primary"
+                                                                            style={{ fontSize: '8px', cursor: 'pointer' }}
+                                                                            onClick={(e) => handleMarkAsRead(notification._id, e)}
+                                                                            title="Mark as read"
+                                                                        >
+                                                                            •
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="mb-1 text-muted" style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                                                                    {notification.message}
+                                                                </p>
+                                                                <div className="d-flex justify-content-between align-items-center">
+                                                                    <small className="text-muted">
+                                                                        {adminNotificationsService.formatTimeAgo(notification.createdAt)}
+                                                                    </small>
+                                                                    <span
+                                                                        className={`badge bg-${adminNotificationsService.getNotificationColor(notification.type)}`}
+                                                                        style={{ fontSize: '10px' }}
+                                                                    >
+                                                                        {notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="position-absolute top-0 end-0 p-2">
+                                                                <button
+                                                                    className="btn btn-sm btn-ghost p-1"
+                                                                    style={{ fontSize: '12px', opacity: '0.6' }}
+                                                                    onClick={(e) => handleDeleteNotification(notification._id, e)}
+                                                                    title="Delete notification"
+                                                                >
+                                                                    <i className="bx bx-x"></i>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="mb-1 fw-semibold" style={{ fontSize: '14px' }}>New User Registered</h6>
-                                                        <p className="mb-1 text-muted" style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                                            John Doe has successfully registered on the platform.
-                                                        </p>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <small className="text-muted">10 minutes ago</small>
-                                                            <span className="badge bg-success" style={{ fontSize: '10px' }}>New</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="position-absolute top-0 end-0 p-2">
-                                                        <button className="btn btn-sm btn-ghost p-1" style={{ fontSize: '12px', opacity: '0.6' }}>
-                                                            <i className="bx bx-x"></i>
-                                                        </button>
-                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center p-4">
+                                                    <i className="bx bx-bell-off display-4 text-muted"></i>
+                                                    <h6 className="text-muted mt-2">No Notifications</h6>
+                                                    <p className="text-muted mb-0" style={{ fontSize: '12px' }}>You're all caught up!</p>
                                                 </div>
-                                            </div>
-
-                                            <div
-                                                className="notification-item p-3 border-bottom position-relative"
-                                                style={notificationItemStyle}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                                                    e.currentTarget.style.borderLeft = '3px solid #696cff';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '';
-                                                    e.currentTarget.style.borderLeft = '3px solid transparent';
-                                                }}
-                                            >
-                                                <div className="d-flex">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <div className="avatar avatar-sm">
-                                                            <div className="avatar-initial bg-warning rounded-circle">
-                                                                <i className="bx bx-server text-white"></i>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="mb-1 fw-semibold" style={{ fontSize: '14px' }}>Server Maintenance</h6>
-                                                        <p className="mb-1 text-muted" style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                                            Scheduled maintenance completed successfully.
-                                                        </p>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <small className="text-muted">30 minutes ago</small>
-                                                            <span className="badge bg-warning" style={{ fontSize: '10px' }}>System</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="position-absolute top-0 end-0 p-2">
-                                                        <button className="btn btn-sm btn-ghost p-1" style={{ fontSize: '12px', opacity: '0.6' }}>
-                                                            <i className="bx bx-x"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div
-                                                className="notification-item p-3 border-bottom position-relative"
-                                                style={notificationItemStyle}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                                                    e.currentTarget.style.borderLeft = '3px solid #696cff';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '';
-                                                    e.currentTarget.style.borderLeft = '3px solid transparent';
-                                                }}
-                                            >
-                                                <div className="d-flex">
-                                                    <div className="flex-shrink-0 me-3">
-                                                        <div className="avatar avatar-sm">
-                                                            <div className="avatar-initial bg-info rounded-circle">
-                                                                <i className="bx bx-credit-card text-white"></i>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex-grow-1">
-                                                        <h6 className="mb-1 fw-semibold" style={{ fontSize: '14px' }}>Payment Received</h6>
-                                                        <p className="mb-1 text-muted" style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                                            Premium subscription payment of $29.99 received.
-                                                        </p>
-                                                        <div className="d-flex justify-content-between align-items-center">
-                                                            <small className="text-muted">1 hour ago</small>
-                                                            <span className="badge bg-info" style={{ fontSize: '10px' }}>Payment</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="position-absolute top-0 end-0 p-2">
-                                                        <button className="btn btn-sm btn-ghost p-1" style={{ fontSize: '12px', opacity: '0.6' }}>
-                                                            <i className="bx bx-x"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
 
-                                        <div className="p-3 text-center border-top bg-light">
-                                            <Link to="/notifications" className="btn btn-sm btn-outline-primary w-100">
-                                                <i className="bx bx-bell me-1"></i>
-                                                View All Notifications
-                                            </Link>
+                                        <div className="p-3 border-top bg-light">
+                                            <div className="d-flex gap-2">
+                                                <button
+                                                    className="btn btn-sm btn-outline-secondary"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        fetchNotifications();
+                                                    }}
+                                                    disabled={loadingNotifications}
+                                                    title="Refresh notifications"
+                                                >
+                                                    <i className={`bx bx-refresh ${loadingNotifications ? 'bx-spin' : ''}`}></i>
+                                                </button>
+                                                <Link
+                                                    to="/notifications"
+                                                    className="btn btn-sm btn-outline-primary flex-grow-1"
+                                                    onClick={() => setShowNotifications(false)}
+                                                >
+                                                    <i className="bx bx-bell me-1"></i>
+                                                    View All
+                                                    {notificationStats && notificationStats.totalNotifications > 0 && (
+                                                        <span className="ms-1">({notificationStats.totalNotifications})</span>
+                                                    )}
+                                                </Link>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

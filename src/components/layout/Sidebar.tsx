@@ -146,12 +146,9 @@ const Sidebar: React.FC = () => {
             <div className="app-brand demo">
                 <Link to="" className="app-brand-link">
                     <span className="app-brand-logo demo">
-                        <span className="text-primary">
-                            <img
-                                src="/assets/img/logo.png"
-                                alt="Blurry Admin"
-                                style={{ height: '32px', maxWidth: '120px', objectFit: 'contain' }}
-                            />
+                        <span className="text-primary d-flex align-items-center">
+                            <img src="/assets/img/logo.png" alt="Blurry Logo" width="60" height="60" />
+                            <span className="app-brand-text demo text-body fw-bold ms-1">Blurry </span>
                         </span>
                     </span>
                 </Link>
@@ -161,7 +158,7 @@ const Sidebar: React.FC = () => {
                     type="button"
                     className="layout-menu-toggle menu-link text-large ms-auto d-xl-block"
                     onClick={() => {
-                        console.log('Desktop toggle button clicked in sidebar');
+                        // console.log('Desktop toggle button clicked in sidebar');
                         toggleSidebar();
                     }}
 
@@ -174,7 +171,7 @@ const Sidebar: React.FC = () => {
                     type="button"
                     className="layout-menu-toggle menu-link text-large ms-auto d-xl-none"
                     onClick={() => {
-                        console.log('Mobile close button clicked in sidebar');
+                        // console.log('Mobile close button clicked in sidebar');
                         toggleSidebar();
                     }}
 

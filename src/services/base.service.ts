@@ -105,11 +105,24 @@ export abstract class BaseService<T extends BaseEntity> {
      * Upload file (for services that support file uploads)
      */
     protected async uploadFile(endpoint: string, formData: FormData): Promise<ApiResponse<any>> {
-        const response = await api.post<ApiResponse<any>>(endpoint, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        // Use POST when uploading to the base endpoint (create),
+        // and PUT when uploading to a specific resource endpoint (update).
+        // Some backends expect multipart uploads on PUT for updates.
+        const isCreate = endpoint === this.baseEndpoint || endpoint === `${this.baseEndpoint}`;
+        let response;
+        if (isCreate) {
+            response = await api.post<ApiResponse<any>>(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        } else {
+            response = await api.put<ApiResponse<any>>(endpoint, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+        }
         return this.handleResponse(response);
     }
 
