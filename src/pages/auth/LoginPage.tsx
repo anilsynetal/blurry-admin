@@ -93,10 +93,10 @@ const LoginPage: React.FC = () => {
                     <div className="card">
                         <div className="card-body">
                             {/* Logo */}
-                            <div className="app-brand justify-content-center">
+                            <div className="app-brand justify-content-center mb-0">
                                 <a href="/" className="app-brand-link gap-2">
                                     <span className="app-brand-logo demo">
-                                        <img src="/assets/img/logo.png" alt="Blurry" height="50" />
+                                        <img src="/assets/img/logo.png" alt="Blurry" style={{ maxHeight: '100px' }} />
                                     </span>
                                 </a>
                             </div>
