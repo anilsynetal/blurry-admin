@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { matchService, type Match, type MatchQueryParams } from '../../services/matches.service';
 import { useToast } from '../../context/ToastContext';
-import Swal from 'sweetalert2';
 import {
     LoadingSpinner,
     EmptyState,
