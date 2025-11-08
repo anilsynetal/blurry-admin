@@ -12,6 +12,7 @@ import {
 export interface DatePlanTemplate extends BaseEntity {
     title: string;
     description: string;
+    duration?: string;
     type: 'coffee' | 'dinner' | 'lunch' | 'drinks' | 'movie' | 'walk' | 'activity' | 'custom';
     costType?: 'free' | 'low_cost' | 'medium' | 'premium';
     templateImage?: string;
@@ -35,6 +36,7 @@ export interface DatePlanTemplateQueryParams extends QueryParams {
 export interface CreateDatePlanTemplatePayload {
     title: string;
     description: string;
+    duration?: string;
     type: DatePlanTemplate['type'];
     costType?: DatePlanTemplate['costType'];
     sortOrder?: number;

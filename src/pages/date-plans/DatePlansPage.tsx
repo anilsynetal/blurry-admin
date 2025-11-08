@@ -18,16 +18,52 @@ const DatePlansPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPlan, setSelectedPlan] = useState<DatePlan | null>(null);
     const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState({
+        status: '',
+        isFromTemplate: '',
+        dateRange: ''
+    });
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: 10,
+        totalRecords: 0
+    });
+    const [stats, setStats] = useState<any>(null);
 
     useEffect(() => {
         fetchPlans();
+        fetchStats();
     }, []);
 
-    const fetchPlans = async () => {
+    // Add useEffect to refetch when filters change
+    useEffect(() => {
+        const hasActiveFilters = filters.status || filters.isFromTemplate || filters.dateRange;
+        if (hasActiveFilters) {
+            fetchPlans(1);
+        }
+    }, [filters]);
+
+    const fetchPlans = async (page = 1) => {
         try {
             setLoading(true);
-            const response = await datePlansService.getDatePlans();
+            const params: any = {
+                page,
+                limit: pagination.pageSize,
+                search: searchTerm,
+                status: filters.status || undefined,
+                isFromTemplate: filters.isFromTemplate || undefined
+            };
+
+            const response = await datePlansService.getDatePlans(params);
             setPlans(response.data || []);
+            setPagination({
+                currentPage: response.pagination?.currentPage || 1,
+                totalPages: response.pagination?.totalPages || 1,
+                pageSize: response.pagination?.pageSize || 10,
+                totalRecords: response.pagination?.totalRecords || 0
+            });
         } catch (error) {
             console.error('Error fetching date plans:', error);
             const apiError = error as ApiError;
@@ -39,6 +75,42 @@ const DatePlansPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchStats = async () => {
+        try {
+            const response = await datePlansService.getDatePlanStats();
+            setStats(response.data);
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+        }
+    };
+
+    const handleSearch = () => {
+        fetchPlans(1);
+    };
+
+    const handlePageChange = (page: number) => {
+        fetchPlans(page);
+    };
+
+    const handlePageSizeChange = (pageSize: number) => {
+        setPagination(prev => ({ ...prev, pageSize }));
+        fetchPlans(1);
+    };
+
+    const handleFilterChange = (key: string, value: string) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleClearFilters = () => {
+        setFilters({
+            status: '',
+            isFromTemplate: '',
+            dateRange: ''
+        });
+        setSearchTerm('');
+        fetchPlans(1);
     };
 
     const handleDeletePlan = async (plan: DatePlan) => {
@@ -128,10 +200,262 @@ const DatePlansPage: React.FC = () => {
                 </div>
             </div>
 
+            {/* Statistics Cards */}
+            {stats && (
+                <div className="row mb-4">
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-primary">
+                                            <i className="bx bx-heart text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Total Plans</small>
+                                        <h3 className="mb-0">{stats.totalPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-warning">
+                                            <i className="bx bx-time text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Pending</small>
+                                        <h3 className="mb-0">{stats.pendingPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-success">
+                                            <i className="bx bx-check text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Completed</small>
+                                        <h3 className="mb-0">{stats.completedPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-info">
+                                            <i className="bx bx-check-circle text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Accepted</small>
+                                        <h3 className="mb-0">{stats.acceptedPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-danger">
+                                            <i className="bx bx-x text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Cancelled</small>
+                                        <h3 className="mb-0">{stats.cancelledPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div className="card">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="avatar flex-shrink-0 me-3">
+                                        <span className="avatar-initial rounded bg-secondary">
+                                            <i className="bx bx-minus-circle text-white"></i>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">Rejected</small>
+                                        <h3 className="mb-0">{stats.rejectedPlans}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Action Bar with Search and Filters */}
             <div className="row mb-4">
                 <div className="col-12">
-                    <div className="d-flex justify-content-between align-items-center">
-                        <h5>Date Plans</h5>
+                    <div className="card">
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h5 className="mb-0">Date Plans List</h5>
+                                <div className="d-flex gap-2">
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-primary btn-sm"
+                                        onClick={handleSearch}
+                                    >
+                                        <i className="bx bx-search me-1"></i>
+                                        Search
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-secondary btn-sm"
+                                        onClick={handleClearFilters}
+                                    >
+                                        <i className="bx bx-refresh me-1"></i>
+                                        Clear Filters
+                                    </button>
+                                    {(filters.status || filters.isFromTemplate || searchTerm) && (
+                                        <span className="badge bg-info">
+                                            {Object.values(filters).filter(Boolean).length + (searchTerm ? 1 : 0)} filter(s) active
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Search and Filters */}
+                            <div className="row">
+                                <div className="col-md-3">
+                                    <label className="form-label small">Search</label>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-sm"
+                                        placeholder="Search by description..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label small">Status</label>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        value={filters.status}
+                                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                                    >
+                                        <option value="">All Status</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="rejected">Rejected</option>
+                                        <option value="confirmed">Confirmed</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                        <option value="cancelled">Cancelled</option>
+                                        <option value="expired">Expired</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label small">Template Usage</label>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        value={filters.isFromTemplate}
+                                        onChange={(e) => handleFilterChange('isFromTemplate', e.target.value)}
+                                    >
+                                        <option value="">All Plans</option>
+                                        <option value="true">From Template</option>
+                                        <option value="false">Custom Plans</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-3">
+                                    <label className="form-label small">Page Size</label>
+                                    <select
+                                        className="form-select form-select-sm"
+                                        value={pagination.pageSize}
+                                        onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+                                    >
+                                        <option value="10">10 per page</option>
+                                        <option value="25">25 per page</option>
+                                        <option value="50">50 per page</option>
+                                        <option value="100">100 per page</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Pagination */}
+                            {pagination.totalPages > 1 && (
+                                <div className="card-footer">
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <small className="text-muted">
+                                                Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1} to {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalRecords)} of {pagination.totalRecords} entries
+                                            </small>
+                                        </div>
+                                        <nav>
+                                            <ul className="pagination pagination-sm mb-0">
+                                                <li className={`page-item ${pagination.currentPage === 1 ? 'disabled' : ''}`}>
+                                                    <button
+                                                        className="page-link"
+                                                        onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                                        disabled={pagination.currentPage === 1}
+                                                    >
+                                                        Previous
+                                                    </button>
+                                                </li>
+
+                                                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                                                    let pageNumber;
+                                                    if (pagination.totalPages <= 5) {
+                                                        pageNumber = i + 1;
+                                                    } else {
+                                                        const start = Math.max(1, pagination.currentPage - 2);
+                                                        const end = Math.min(pagination.totalPages, start + 4);
+                                                        pageNumber = start + i;
+                                                        if (pageNumber > end) return null;
+                                                    }
+
+                                                    return (
+                                                        <li key={pageNumber} className={`page-item ${pagination.currentPage === pageNumber ? 'active' : ''}`}>
+                                                            <button
+                                                                className="page-link"
+                                                                onClick={() => handlePageChange(pageNumber)}
+                                                            >
+                                                                {pageNumber}
+                                                            </button>
+                                                        </li>
+                                                    );
+                                                })}
+
+                                                <li className={`page-item ${pagination.currentPage === pagination.totalPages ? 'disabled' : ''}`}>
+                                                    <button
+                                                        className="page-link"
+                                                        onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                                        disabled={pagination.currentPage === pagination.totalPages}
+                                                    >
+                                                        Next
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -140,14 +464,17 @@ const DatePlansPage: React.FC = () => {
                 <div className="col-12">
                     <div className="card">
                         <div className="table-responsive text-nowrap">
-                            <table className="table table-striped">
+                            <table className="table table-hover">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
+                                        <th>Description</th>
                                         <th>Proposed Date</th>
                                         <th>Proposed By</th>
                                         <th>Proposed To</th>
                                         <th>Status</th>
                                         <th>Template</th>
+                                        <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -155,35 +482,83 @@ const DatePlansPage: React.FC = () => {
                                     {plans.length > 0 ? (
                                         plans.map((plan) => (
                                             <tr key={plan._id}>
-                                                <td>{formatDate(plan.proposedDate)}</td>
                                                 <td>
-                                                    <div className="d-flex align-items-center">
-                                                        {plan.proposedBy.profilePicture && (
-                                                            <img
-                                                                src={getImageUrl(plan.proposedBy.profilePicture)}
-                                                                alt={plan.proposedBy.name}
-                                                                style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
-                                                            />
+                                                    <span className="font-monospace small">
+                                                        {plan._id?.slice(-8) || 'N/A'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div style={{ maxWidth: '200px' }}>
+                                                        <div className="text-truncate fw-semibold">
+                                                            {plan.description || 'No description'}
+                                                        </div>
+                                                        {plan.isFromTemplate && (
+                                                            <small className="badge bg-light text-dark">From Template</small>
                                                         )}
-                                                        {plan.proposedBy.name}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div>
+                                                        <div className="fw-semibold">{formatDate(plan.proposedDate)}</div>
+                                                        <small className="text-muted">
+                                                            {new Date(plan.proposedDate) > new Date() ?
+                                                                <span className="text-success">Upcoming</span> :
+                                                                <span className="text-muted">Past</span>
+                                                            }
+                                                        </small>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div className="d-flex align-items-center">
-                                                        {plan.proposedTo.profilePicture && (
-                                                            <img
-                                                                src={getImageUrl(plan.proposedTo.profilePicture)}
-                                                                alt={plan.proposedTo.name}
-                                                                style={{ width: '30px', height: '30px', borderRadius: '50%', marginRight: '10px' }}
-                                                            />
-                                                        )}
-                                                        {plan.proposedTo.name}
+                                                        <div className="avatar avatar-sm me-2">
+                                                            {plan.proposedBy?.profilePicture ? (
+                                                                <img
+                                                                    src={getImageUrl(plan.proposedBy.profilePicture)}
+                                                                    alt={plan.proposedBy?.name}
+                                                                    className="rounded-circle"
+                                                                />
+                                                            ) : (
+                                                                <span className="avatar-initial rounded-circle bg-primary">
+                                                                    {plan.proposedBy?.name?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-semibold">{plan.proposedBy?.name || 'Unknown User'}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="avatar avatar-sm me-2">
+                                                            {plan.proposedTo?.profilePicture ? (
+                                                                <img
+                                                                    src={getImageUrl(plan.proposedTo.profilePicture)}
+                                                                    alt={plan.proposedTo?.name}
+                                                                    className="rounded-circle"
+                                                                />
+                                                            ) : (
+                                                                <span className="avatar-initial rounded-circle bg-secondary">
+                                                                    {plan.proposedTo?.name?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-semibold">{plan.proposedTo?.name || 'Unknown User'}</div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <span className={`badge bg-${getStatusBadge(plan.status)}`}>
-                                                        {plan.status.replace('_', ' ')}
+                                                        {plan.status.replace('_', ' ').toUpperCase()}
                                                     </span>
+                                                    {plan.respondedAt && (
+                                                        <div>
+                                                            <small className="text-muted d-block">
+                                                                Responded: {new Date(plan.respondedAt).toLocaleDateString()}
+                                                            </small>
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     {plan.templateUsed ? (
@@ -192,15 +567,23 @@ const DatePlansPage: React.FC = () => {
                                                                 <img
                                                                     src={getImageUrl(plan.templateUsed.templateImage)}
                                                                     alt={plan.templateUsed.title}
-                                                                    style={{ width: '30px', height: '30px', objectFit: 'cover', marginRight: '10px' }}
+                                                                    style={{ width: '24px', height: '24px', objectFit: 'cover', marginRight: '8px' }}
                                                                     className="rounded"
                                                                 />
                                                             )}
-                                                            {plan.templateUsed.title}
+                                                            <div>
+                                                                <div className="fw-semibold small">{plan.templateUsed.title}</div>
+                                                                <small className="text-muted">{plan.templateUsed.type}</small>
+                                                            </div>
                                                         </div>
                                                     ) : (
-                                                        <span className="text-muted">Custom</span>
+                                                        <span className="badge bg-light text-dark">Custom</span>
                                                     )}
+                                                </td>
+                                                <td>
+                                                    <small className="text-muted">
+                                                        {plan.createdAt ? formatDate(plan.createdAt) : 'N/A'}
+                                                    </small>
                                                 </td>
                                                 <td>
                                                     <div className="dropdown">
@@ -230,7 +613,11 @@ const DatePlansPage: React.FC = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={6} className="text-center">No date plans found</td>
+                                            <td colSpan={9} className="text-center py-4">
+                                                {(filters.status || filters.isFromTemplate || searchTerm) ?
+                                                    'No date plans match your current filters.' :
+                                                    'No date plans found'}
+                                            </td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -259,63 +646,146 @@ const DatePlansPage: React.FC = () => {
                             <div className="modal-body">
                                 <div className="row">
                                     <div className="col-md-6">
-                                        <h6>Basic Information</h6>
-                                        <p><strong>Description:</strong> {selectedPlan.description}</p>
-                                        <p><strong>Proposed Date:</strong> {formatDate(selectedPlan.proposedDate)}</p>
-                                        <p><strong>Status:</strong>
-                                            <span className={`badge bg-${getStatusBadge(selectedPlan.status)} ms-2`}>
-                                                {selectedPlan.status.replace('_', ' ')}
-                                            </span>
-                                        </p>
-                                        <p><strong>From Template:</strong> {selectedPlan.isFromTemplate ? 'Yes' : 'No'}</p>
-                                        {selectedPlan.respondedAt && (
-                                            <p><strong>Responded At:</strong> {formatDate(selectedPlan.respondedAt)}</p>
-                                        )}
-                                    </div>
-                                    <div className="col-md-6">
-                                        <h6>Participants</h6>
+                                        <h6 className="mb-3">Basic Information</h6>
                                         <div className="mb-3">
-                                            <strong>Proposed By:</strong>
-                                            <div className="d-flex align-items-center mt-1">
-                                                {selectedPlan.proposedBy.profilePicture && (
-                                                    <img
-                                                        src={getImageUrl(selectedPlan.proposedBy.profilePicture)}
-                                                        alt={selectedPlan.proposedBy.name}
-                                                        style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
-                                                    />
-                                                )}
-                                                <span>{selectedPlan.proposedBy.name}</span>
+                                            <strong>ID:</strong>
+                                            <span className="font-monospace ms-2">{selectedPlan._id}</span>
+                                        </div>
+                                        <div className="mb-3">
+                                            <strong>Description:</strong>
+                                            <div className="mt-1 p-2 bg-light rounded">
+                                                {selectedPlan.description || 'No description provided'}
                                             </div>
                                         </div>
                                         <div className="mb-3">
-                                            <strong>Proposed To:</strong>
-                                            <div className="d-flex align-items-center mt-1">
-                                                {selectedPlan.proposedTo.profilePicture && (
-                                                    <img
-                                                        src={getImageUrl(selectedPlan.proposedTo.profilePicture)}
-                                                        alt={selectedPlan.proposedTo.name}
-                                                        style={{ width: '40px', height: '40px', borderRadius: '50%', marginRight: '10px' }}
-                                                    />
+                                            <strong>Proposed Date:</strong>
+                                            <div className="mt-1">
+                                                {formatDate(selectedPlan.proposedDate)}
+                                                {new Date(selectedPlan.proposedDate) > new Date() && (
+                                                    <span className="badge bg-success ms-2">Upcoming</span>
                                                 )}
-                                                <span>{selectedPlan.proposedTo.name}</span>
+                                            </div>
+                                        </div>
+                                        <div className="mb-3">
+                                            <strong>Status:</strong>
+                                            <span className={`badge bg-${getStatusBadge(selectedPlan.status)} ms-2`}>
+                                                {selectedPlan.status.replace('_', ' ').toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="mb-3">
+                                            <strong>From Template:</strong>
+                                            <span className={`badge ms-2 ${selectedPlan.isFromTemplate ? 'bg-info' : 'bg-secondary'}`}>
+                                                {selectedPlan.isFromTemplate ? 'Yes' : 'No'}
+                                            </span>
+                                        </div>
+                                        {selectedPlan.respondedAt && (
+                                            <div className="mb-3">
+                                                <strong>Responded At:</strong>
+                                                <div className="mt-1">{formatDate(selectedPlan.respondedAt)}</div>
+                                            </div>
+                                        )}
+                                        <div className="mb-3">
+                                            <strong>Created:</strong>
+                                            <div className="mt-1">{selectedPlan.createdAt ? formatDate(selectedPlan.createdAt) : 'N/A'}</div>
+                                        </div>
+                                        <div className="mb-3">
+                                            <strong>Last Updated:</strong>
+                                            <div className="mt-1">{selectedPlan.updatedAt ? formatDate(selectedPlan.updatedAt) : 'N/A'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <h6 className="mb-3">Participants</h6>
+                                        <div className="mb-4">
+                                            <strong>Proposed By:</strong>
+                                            <div className="card mt-2">
+                                                <div className="card-body p-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="avatar me-3">
+                                                            {selectedPlan.proposedBy?.profilePicture ? (
+                                                                <img
+                                                                    src={getImageUrl(selectedPlan.proposedBy.profilePicture)}
+                                                                    alt={selectedPlan.proposedBy.name}
+                                                                    className="rounded-circle"
+                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                                                                />
+                                                            ) : (
+                                                                <span className="avatar-initial rounded-circle bg-primary">
+                                                                    {selectedPlan.proposedBy?.name?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-semibold">{selectedPlan.proposedBy?.name || 'Unknown User'}</div>
+                                                            <small className="text-muted font-monospace">
+                                                                ID: {selectedPlan.proposedBy?._id || 'N/A'}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="mb-4">
+                                            <strong>Proposed To:</strong>
+                                            <div className="card mt-2">
+                                                <div className="card-body p-3">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="avatar me-3">
+                                                            {selectedPlan.proposedTo?.profilePicture ? (
+                                                                <img
+                                                                    src={getImageUrl(selectedPlan.proposedTo.profilePicture)}
+                                                                    alt={selectedPlan.proposedTo.name}
+                                                                    className="rounded-circle"
+                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                                                                />
+                                                            ) : (
+                                                                <span className="avatar-initial rounded-circle bg-secondary">
+                                                                    {selectedPlan.proposedTo?.name?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-semibold">{selectedPlan.proposedTo?.name || 'Unknown User'}</div>
+                                                            <small className="text-muted font-monospace">
+                                                                ID: {selectedPlan.proposedTo?._id || 'N/A'}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         {selectedPlan.templateUsed && (
-                                            <div>
+                                            <div className="mb-3">
                                                 <strong>Template Used:</strong>
-                                                <div className="d-flex align-items-center mt-1">
-                                                    {selectedPlan.templateUsed.templateImage && (
-                                                        <img
-                                                            src={getImageUrl(selectedPlan.templateUsed.templateImage)}
-                                                            alt={selectedPlan.templateUsed.title}
-                                                            style={{ width: '40px', height: '40px', objectFit: 'cover', marginRight: '10px' }}
-                                                            className="rounded"
-                                                        />
-                                                    )}
-                                                    <div>
-                                                        <div>{selectedPlan.templateUsed.title}</div>
-                                                        <small className="text-muted">{selectedPlan.templateUsed.type}</small>
+                                                <div className="card mt-2">
+                                                    <div className="card-body p-3">
+                                                        <div className="d-flex align-items-center">
+                                                            {selectedPlan.templateUsed.templateImage && (
+                                                                <img
+                                                                    src={getImageUrl(selectedPlan.templateUsed.templateImage)}
+                                                                    alt={selectedPlan.templateUsed.title}
+                                                                    style={{ width: '50px', height: '50px', objectFit: 'cover' }}
+                                                                    className="rounded me-3"
+                                                                />
+                                                            )}
+                                                            <div>
+                                                                <div className="fw-semibold">{selectedPlan.templateUsed.title}</div>
+                                                                <small className="text-muted">Type: {selectedPlan.templateUsed.type}</small>
+                                                                <div>
+                                                                    <small className="text-muted font-monospace">
+                                                                        ID: {selectedPlan.templateUsed._id}
+                                                                    </small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {selectedPlan.matchId && (
+                                            <div className="mb-3">
+                                                <strong>Match ID:</strong>
+                                                <div className="mt-1">
+                                                    <span className="font-monospace">{selectedPlan.matchId}</span>
                                                 </div>
                                             </div>
                                         )}

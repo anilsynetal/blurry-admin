@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { subscriptionService, type Subscription, type SubscriptionQueryParams } from '../../services/subscriptions.service';
 import { useToast } from '../../context/ToastContext';
-import Swal from 'sweetalert2';
 import {
     LoadingSpinner,
     EmptyState,
     ActionBar,
     TablePagination,
     StatusBadge,
-    ActionDropdown,
     PageHeader
 } from '../../components/common';
 
@@ -44,7 +42,21 @@ const SubscriptionsPage: React.FC = () => {
             };
 
             const response = await subscriptionService.getSubscriptions(params);
-            setSubscriptions(response.data);
+
+            // Filter out any subscriptions with null user or plan references
+            const validSubscriptions = response.data.filter(subscription => {
+                const isValid = subscription.user && subscription.plan;
+                if (!isValid) {
+                    console.warn('Filtered out invalid subscription:', {
+                        id: subscription._id,
+                        hasUser: !!subscription.user,
+                        hasPlan: !!subscription.plan
+                    });
+                }
+                return isValid;
+            });
+
+            setSubscriptions(validSubscriptions);
             setPagination({
                 currentPage: response.pagination?.currentPage || 1,
                 totalPages: response.pagination?.totalPages || 1,
@@ -77,6 +89,21 @@ const SubscriptionsPage: React.FC = () => {
         fetchStats();
     }, []);
 
+    // Add useEffect to refetch when filters change
+    useEffect(() => {
+        const hasActiveFilters = filters.status || filters.userId || filters.planId;
+        if (hasActiveFilters) {
+            fetchSubscriptions(1);
+        }
+    }, [filters]);
+
+    // Add useEffect to handle search term changes
+    useEffect(() => {
+        if (searchTerm === '') {
+            fetchSubscriptions(1);
+        }
+    }, [searchTerm]);
+
     const handleSearch = () => {
         fetchSubscriptions(1);
     };
@@ -94,44 +121,15 @@ const SubscriptionsPage: React.FC = () => {
         setFilters(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleToggleStatus = async (subscription: Subscription) => {
-        try {
-            const action = subscription.status === 'active' ? 'cancel' : 'reactivate';
-            const result = await Swal.fire({
-                title: 'Confirm Action',
-                text: `Are you sure you want to ${action} this subscription?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: `Yes, ${action}`,
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                if (action === 'cancel') {
-                    await subscriptionService.cancelSubscription(subscription._id!);
-                } else {
-                    await subscriptionService.reactivateSubscription(subscription._id!);
-                }
-
-                fetchSubscriptions(pagination.currentPage);
-                fetchStats();
-                showToast({
-                    type: 'success',
-                    title: 'Success',
-                    message: `Subscription ${action}d successfully`
-                });
-            }
-        } catch (error) {
-            console.error('Error updating subscription status:', error);
-            const apiError = error as any;
-            showToast({
-                type: 'error',
-                title: 'Error',
-                message: apiError.response?.data?.message || 'Failed to update subscription status'
-            });
-        }
+    const handleClearFilters = () => {
+        setFilters({
+            status: '',
+            userId: '',
+            planId: ''
+        });
+        setSearchTerm('');
+        fetchSubscriptions(1);
     };
-
     if (loading && subscriptions.length === 0) {
         return <LoadingSpinner size="lg" text="Loading subscriptions..." />;
     }
@@ -240,11 +238,25 @@ const SubscriptionsPage: React.FC = () => {
                             <i className="bx bx-search me-1"></i>
                             Search
                         </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={handleClearFilters}
+                        >
+                            <i className="bx bx-refresh me-1"></i>
+                            Clear Filters
+                        </button>
+                        {(filters.status || filters.userId || filters.planId || searchTerm) && (
+                            <span className="badge bg-info">
+                                {Object.values(filters).filter(Boolean).length + (searchTerm ? 1 : 0)} filter(s) active
+                            </span>
+                        )}
                     </div>
                 }
                 filters={
                     <div className="row">
                         <div className="col-md-4">
+                            <label className="form-label small">Status Filter</label>
                             <select
                                 className="form-select form-select-sm"
                                 value={filters.status}
@@ -256,6 +268,26 @@ const SubscriptionsPage: React.FC = () => {
                                 <option value="expired">Expired</option>
                                 <option value="paused">Paused</option>
                             </select>
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label small">User ID Filter</label>
+                            <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                placeholder="Enter User ID"
+                                value={filters.userId}
+                                onChange={(e) => handleFilterChange('userId', e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-4">
+                            <label className="form-label small">Plan ID Filter</label>
+                            <input
+                                type="text"
+                                className="form-control form-control-sm"
+                                placeholder="Enter Plan ID"
+                                value={filters.planId}
+                                onChange={(e) => handleFilterChange('planId', e.target.value)}
+                            />
                         </div>
                     </div>
                 }
@@ -276,29 +308,28 @@ const SubscriptionsPage: React.FC = () => {
                                             <th>Status</th>
                                             <th>Current Period</th>
                                             <th>Credits</th>
-                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {subscriptions.map((subscription) => (
+                                        {subscriptions.filter(subscription => subscription.user && subscription.plan).map((subscription) => (
                                             <tr key={subscription._id}>
                                                 <td>
                                                     <div className="d-flex align-items-center">
                                                         <div className="avatar avatar-sm me-3">
                                                             <span className="avatar-initial rounded-circle bg-primary">
-                                                                {subscription.user.name?.charAt(0).toUpperCase()}
+                                                                {subscription.user?.name?.charAt(0).toUpperCase() || 'U'}
                                                             </span>
                                                         </div>
                                                         <div>
-                                                            <h6 className="mb-0">{subscription.user.name}</h6>
-                                                            <small className="text-muted">{subscription.user.email}</small>
+                                                            <h6 className="mb-0">{subscription.user?.name || 'Unknown User'}</h6>
+                                                            <small className="text-muted">{subscription.user?.email || 'No email'}</small>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div>
-                                                        <div className="fw-semibold">{subscription.plan.name}</div>
-                                                        <small className="text-muted">${subscription.plan.price}/{subscription.plan.billingCycle}</small>
+                                                        <div className="fw-semibold">{subscription.plan?.name || 'Unknown Plan'}</div>
+                                                        <small className="text-muted">${subscription.plan?.price || 0}/{subscription.plan?.billingCycle || 'month'}</small>
                                                     </div>
                                                 </td>
                                                 <td>
@@ -315,19 +346,14 @@ const SubscriptionsPage: React.FC = () => {
                                                 </td>
                                                 <td>
                                                     <small className="text-muted">
-                                                        {new Date(subscription.currentPeriodStart).toLocaleDateString()} - {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                                                        {subscription.currentPeriodStart && subscription.currentPeriodEnd
+                                                            ? `${new Date(subscription.currentPeriodStart).toLocaleDateString()} - ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}`
+                                                            : 'No period set'
+                                                        }
                                                     </small>
                                                 </td>
                                                 <td>
-                                                    <span className="badge bg-light text-dark">{subscription.credits}</span>
-                                                </td>
-                                                <td>
-                                                    <ActionDropdown
-                                                        onDelete={() => handleToggleStatus(subscription)}
-                                                        statusLabel={subscription.status === 'active' ? 'Cancel' : 'Reactivate'}
-                                                        statusIcon={subscription.status === 'active' ? 'bx-x' : 'bx-check'}
-                                                        additionalActions={[]}
-                                                    />
+                                                    <span className="badge bg-light text-dark">{subscription.credits || 0}</span>
                                                 </td>
                                             </tr>
                                         ))}
@@ -350,11 +376,28 @@ const SubscriptionsPage: React.FC = () => {
                     </div>
                 </div>
             ) : (
-                <EmptyState
-                    title="No Subscriptions Found"
-                    description="No subscriptions match your current filters."
-                    icon="bx-package"
-                />
+                <div>
+                    <EmptyState
+                        title="No Subscriptions Found"
+                        description={
+                            (filters.status || filters.userId || filters.planId || searchTerm)
+                                ? "No subscriptions match your current filters."
+                                : "No subscriptions have been created yet."
+                        }
+                        icon="bx-package"
+                    />
+                    {(filters.status || filters.userId || filters.planId || searchTerm) && (
+                        <div className="text-center mt-3">
+                            <button
+                                className="btn btn-outline-primary"
+                                onClick={handleClearFilters}
+                            >
+                                <i className="bx bx-refresh me-2"></i>
+                                Clear Filters
+                            </button>
+                        </div>
+                    )}
+                </div>
             )}
         </div>
     );

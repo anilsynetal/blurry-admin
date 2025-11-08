@@ -39,6 +39,7 @@ const DatePlanTemplatesPage: React.FC = () => {
     const [formData, setFormData] = useState<CreateDatePlanTemplatePayload>({
         title: '',
         description: '',
+        duration: '',
         type: 'coffee',
         costType: 'free',
         sortOrder: 0,
@@ -97,6 +98,7 @@ const DatePlanTemplatesPage: React.FC = () => {
         setFormData({
             title: '',
             description: '',
+            duration: '',
             type: 'coffee',
             costType: 'free',
             sortOrder: 0,
@@ -142,6 +144,7 @@ const DatePlanTemplatesPage: React.FC = () => {
             const updateData: UpdateDatePlanTemplatePayload = {
                 title: formData.title,
                 description: formData.description,
+                duration: formData.duration,
                 type: formData.type,
                 costType: formData.costType,
                 sortOrder: formData.sortOrder,
@@ -226,6 +229,7 @@ const DatePlanTemplatesPage: React.FC = () => {
         setFormData({
             title: template.title,
             description: template.description,
+            duration: template.duration || '',
             type: template.type,
             costType: template.costType,
             sortOrder: template.sortOrder,
@@ -328,6 +332,7 @@ const DatePlanTemplatesPage: React.FC = () => {
                                         <th>Icon</th>
                                         <th>Title</th>
                                         <th>Type</th>
+                                        <th>Duration</th>
                                         <th>Cost Type</th>
                                         <th>Sort Order</th>
                                         <th>User Count</th>
@@ -366,6 +371,11 @@ const DatePlanTemplatesPage: React.FC = () => {
                                                 <td>{template.title}</td>
                                                 <td>
                                                     <span className="badge bg-info">{template.type}</span>
+                                                </td>
+                                                <td>
+                                                    <span className="text-muted">
+                                                        {template.duration || 'Not set'}
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <span className={`badge ${template.costType === 'free' ? 'bg-success' : 'bg-warning'}`}>
@@ -494,6 +504,20 @@ const DatePlanTemplatesPage: React.FC = () => {
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         />
                                         {fieldErrors.description && <div className="invalid-feedback">{fieldErrors.description}</div>}
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Duration</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${fieldErrors.duration ? 'is-invalid' : ''}`}
+                                            value={formData.duration || ''}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            placeholder="e.g., 2 hrs, 45 mins, 1.5 hrs, 2 hrs 30 mins"
+                                        />
+                                        <div className="form-text">
+                                            Enter duration in formats like: "2 hrs", "45 mins", "1.5 hrs", "2 hrs 30 mins"
+                                        </div>
+                                        {fieldErrors.duration && <div className="invalid-feedback">{fieldErrors.duration}</div>}
                                     </div>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
@@ -625,6 +649,20 @@ const DatePlanTemplatesPage: React.FC = () => {
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         />
                                         {fieldErrors.description && <div className="invalid-feedback">{fieldErrors.description}</div>}
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Duration</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${fieldErrors.duration ? 'is-invalid' : ''}`}
+                                            value={formData.duration || ''}
+                                            onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                                            placeholder="e.g., 2 hrs, 45 mins, 1.5 hrs, 2 hrs 30 mins"
+                                        />
+                                        <div className="form-text">
+                                            Enter duration in formats like: "2 hrs", "45 mins", "1.5 hrs", "2 hrs 30 mins"
+                                        </div>
+                                        {fieldErrors.duration && <div className="invalid-feedback">{fieldErrors.duration}</div>}
                                     </div>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">

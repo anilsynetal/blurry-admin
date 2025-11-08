@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { transactionService, Transaction, TransactionQueryParams } from '../../services/transactions.service';
 import { useToast } from '../../context/ToastContext';
-import Swal from 'sweetalert2';
 
 interface ValidationError {
     field: string;
@@ -99,78 +98,6 @@ const TransactionsPage: React.FC = () => {
 
     const handlePageChange = (page: number) => {
         setQueryParams({ ...queryParams, page });
-    };
-
-    const handleViewDetails = (_transaction: Transaction) => {
-        // TODO: Implement view details modal
-        showToast({
-            type: 'info',
-            title: 'Info',
-            message: 'View details functionality coming soon'
-        });
-    };
-
-    const handleUpdateStatus = async (transaction: Transaction, newStatus: string) => {
-        const result = await Swal.fire({
-            title: 'Update Transaction Status',
-            text: `Are you sure you want to change the status to "${newStatus}"?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, update it!'
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await transactionService.updateTransactionStatus(transaction._id!, { status: newStatus as Transaction['status'] });
-                await fetchTransactions();
-                showToast({
-                    type: 'success',
-                    title: 'Success',
-                    message: 'Transaction status updated successfully!'
-                });
-            } catch (error) {
-                const apiError = error as ApiError;
-                showToast({
-                    type: 'error',
-                    title: 'Error',
-                    message: apiError.response?.data?.message || apiError.message || 'Failed to update transaction status'
-                });
-            }
-        }
-    };
-
-    const handleProcessRefund = async (transaction: Transaction) => {
-        const result = await Swal.fire({
-            title: 'Process Refund',
-            text: `Are you sure you want to process a refund for this transaction?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, process refund!'
-        });
-
-        if (result.isConfirmed) {
-            try {
-                await transactionService.processRefund(transaction._id!, {});
-                await fetchTransactions();
-                await fetchStats();
-                showToast({
-                    type: 'success',
-                    title: 'Success',
-                    message: 'Refund processed successfully!'
-                });
-            } catch (error) {
-                const apiError = error as ApiError;
-                showToast({
-                    type: 'error',
-                    title: 'Error',
-                    message: apiError.response?.data?.message || apiError.message || 'Failed to process refund'
-                });
-            }
-        }
     };
 
     const formatCurrency = (amount: number) => {
@@ -346,7 +273,6 @@ const TransactionsPage: React.FC = () => {
                                         <th>Status</th>
                                         <th>Type</th>
                                         <th>Date</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -369,53 +295,12 @@ const TransactionsPage: React.FC = () => {
                                                 </td>
                                                 <td>{transaction.type}</td>
                                                 <td>{formatDate(transaction.createdAt!)}</td>
-                                                <td>
-                                                    <div className="dropdown">
-                                                        <button
-                                                            className="btn p-0 dropdown-toggle hide-arrow"
-                                                            data-bs-toggle="dropdown"
-                                                        >
-                                                            <i className="bx bx-dots-vertical-rounded"></i>
-                                                        </button>
-                                                        <div className="dropdown-menu">
-                                                            <button
-                                                                className="dropdown-item"
-                                                                onClick={() => handleViewDetails(transaction)}
-                                                            >
-                                                                <i className="bx bx-show me-1"></i> View Details
-                                                            </button>
-                                                            {transaction.status === 'succeeded' && (
-                                                                <button
-                                                                    className="dropdown-item text-warning"
-                                                                    onClick={() => handleProcessRefund(transaction)}
-                                                                >
-                                                                    <i className="bx bx-refresh me-1"></i> Process Refund
-                                                                </button>
-                                                            )}
-                                                            {transaction.status === 'pending' && (
-                                                                <>
-                                                                    <button
-                                                                        className="dropdown-item text-success"
-                                                                        onClick={() => handleUpdateStatus(transaction, 'succeeded')}
-                                                                    >
-                                                                        <i className="bx bx-check me-1"></i> Mark Succeeded
-                                                                    </button>
-                                                                    <button
-                                                                        className="dropdown-item text-danger"
-                                                                        onClick={() => handleUpdateStatus(transaction, 'failed')}
-                                                                    >
-                                                                        <i className="bx bx-x me-1"></i> Mark Failed
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </td>
+
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={7} className="text-center">No transactions found</td>
+                                            <td colSpan={6} className="text-center">No transactions found</td>
                                         </tr>
                                     )}
                                 </tbody>
