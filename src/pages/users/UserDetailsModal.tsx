@@ -6,12 +6,14 @@ interface UserDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     user: User;
+    onViewReferrals?: (userId: string) => void;
 }
 
 const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     isOpen,
     onClose,
     user,
+    onViewReferrals,
 }) => {
     // Helper function to get full image URL
     const getImageUrl = (imagePath: string) => {
@@ -187,11 +189,70 @@ const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Referral Information */}
+                            {user.inviteCode && (
+                                <div className="col-md-12 mb-4">
+                                    <div className="card border-0 shadow-sm">
+                                        <div className="p-3 bg-light">
+                                            <h6 className="mb-0 fw-semibold">Referral Information</h6>
+                                        </div>
+                                        <div className="card-body">
+                                            <div className="row">
+                                                <div className="col-md-6">
+                                                    <div className="mb-3">
+                                                        <small className="text-muted d-block">Invite Code</small>
+                                                        <span className="fw-medium badge bg-info text-dark fs-6">
+                                                            {user.inviteCode}
+                                                        </span>
+                                                    </div>
+                                                    {user.referralStats && (
+                                                        <div className="mb-3">
+                                                            <small className="text-muted d-block">Total Referred</small>
+                                                            <span className="fw-medium text-primary fs-5">
+                                                                {user.referralStats.totalReferred || 0}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="col-md-6">
+                                                    {user.referralStats && (
+                                                        <>
+                                                            <div className="mb-3">
+                                                                <small className="text-muted d-block">Credits Earned</small>
+                                                                <span className="fw-medium text-success">
+                                                                    ${user.referralStats.totalCreditsEarned || 0}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mb-3">
+                                                                <small className="text-muted d-block">Successful Referrals</small>
+                                                                <span className="fw-medium text-info">
+                                                                    {user.referralStats.successfulReferrals || 0}
+                                                                </span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
                     {/* Footer */}
                     <div className="modal-footer">
+                        {user.referralStats && user.referralStats.totalReferred > 0 && onViewReferrals && user._id && (
+                            <button
+                                type="button"
+                                className="btn btn-info me-auto"
+                                onClick={() => onViewReferrals(user._id!)}
+                            >
+                                <i className="bx bx-users me-2"></i>
+                                View Referrals ({user.referralStats.totalReferred})
+                            </button>
+                        )}
                         <button type="button" className="btn btn-secondary" onClick={onClose}>
                             Close
                         </button>

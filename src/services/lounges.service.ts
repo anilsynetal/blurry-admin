@@ -94,13 +94,16 @@ class LoungesService extends BaseService<Lounge> {
     /**
      * Create new lounge with image uploads
      */
-    async createLounge(data: CreateLoungePayload, images: FileList | File[]): Promise<ApiResponse<Lounge>> {
+    async createLounge(data: CreateLoungePayload, images: FileList | File[], imageType: 'image' | 'bannerImage' = 'image'): Promise<ApiResponse<Lounge>> {
         const formData = new FormData();
 
         // Add lounge data
         Object.entries(data).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
-                if (typeof value === 'object') {
+                if (key === 'tags' && Array.isArray(value)) {
+                    // Convert tags array to comma-separated string
+                    formData.append(key, value.join(','));
+                } else if (typeof value === 'object') {
                     formData.append(key, JSON.stringify(value));
                 } else {
                     formData.append(key, value.toString());
@@ -108,28 +111,27 @@ class LoungesService extends BaseService<Lounge> {
             }
         });
 
-        // Add images
-        Array.from(images).forEach((file, index) => {
-            if (index === 0) {
-                formData.append('mainImage', file);
-            }
-            formData.append('images', file);
-        });
-
-        return this.uploadFile(this.baseEndpoint, formData);
+        // Add single image to the specified field type
+        const imageArray = Array.from(images);
+        if (imageArray.length > 0) {
+            formData.append(imageType, imageArray[0]);
+        } return this.uploadFile(this.baseEndpoint, formData);
     }
 
     /**
      * Update lounge with optional image uploads
      */
-    async updateLounge(id: string, data: UpdateLoungePayload, images?: FileList | File[]): Promise<ApiResponse<Lounge>> {
+    async updateLounge(id: string, data: UpdateLoungePayload, images?: FileList | File[], imageType: 'image' | 'bannerImage' = 'image'): Promise<ApiResponse<Lounge>> {
         if (images && images.length > 0) {
             const formData = new FormData();
 
             // Add lounge data
             Object.entries(data).forEach(([key, value]) => {
                 if (value !== undefined && value !== null) {
-                    if (typeof value === 'object') {
+                    if (key === 'tags' && Array.isArray(value)) {
+                        // Convert tags array to comma-separated string
+                        formData.append(key, value.join(','));
+                    } else if (typeof value === 'object') {
                         formData.append(key, JSON.stringify(value));
                     } else {
                         formData.append(key, value.toString());
@@ -137,17 +139,28 @@ class LoungesService extends BaseService<Lounge> {
                 }
             });
 
-            // Add images
-            Array.from(images).forEach((file, index) => {
-                if (index === 0) {
-                    formData.append('mainImage', file);
+            // Add single image to the specified field type
+            const imageArray = Array.from(images);
+            if (imageArray.length > 0) {
+                formData.append(imageType, imageArray[0]);
+            }            // Use PUT method for updates with FormData
+            const response = await api.put<ApiResponse<Lounge>>(
+                `${this.baseEndpoint}/${id}`,
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
                 }
-                formData.append('images', file);
-            });
-
-            return this.uploadFile(`${this.baseEndpoint}/${id}`, formData);
+            );
+            return this.handleResponse(response);
         } else {
-            return this.update(id, data);
+            // Handle tags conversion for regular update without images
+            const updateData = { ...data };
+            if (updateData.tags && Array.isArray(updateData.tags)) {
+                (updateData as any).tags = updateData.tags.join(',');
+            }
+            return this.update(id, updateData);
         }
     }
 

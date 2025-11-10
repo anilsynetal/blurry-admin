@@ -50,7 +50,9 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [imageFiles, setImageFiles] = useState<FileList | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string>('');
+    const [imageType, setImageType] = useState<'image' | 'bannerImage'>('image');
     const [tagInput, setTagInput] = useState<string>('');
 
     const [formData, setFormData] = useState<LoungeFormData>({
@@ -83,7 +85,9 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
             sortOrder: 0
         });
         setFieldErrors({});
-        setImageFiles(null);
+        setImageFile(null);
+        setImagePreview('');
+        setImageType('image');
         setTagInput('');
     };
 
@@ -111,11 +115,31 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         }
     };
 
-    const handleImagesChange = (files: FileList | null) => {
-        setImageFiles(files);
-    };
+    const handleImageChange = (files: FileList | null) => {
+        if (files && files[0]) {
+            const file = files[0];
+            setImageFile(file);
 
-    const handleTagAdd = (tag: string) => {
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setImagePreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+
+            // Clear field error when user selects a file
+            if (fieldErrors.image) {
+                setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.image;
+                    return newErrors;
+                });
+            }
+        } else {
+            setImageFile(null);
+            setImagePreview('');
+        }
+    }; const handleTagAdd = (tag: string) => {
         const trimmedTag = tag.trim();
         if (trimmedTag && !formData.tags.includes(trimmedTag)) {
             setFormData(prev => ({
@@ -144,6 +168,11 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         // Description validation
         if (!formData.description.trim()) {
             errors.description = 'Description is required';
+        }
+
+        // Image validation for create mode
+        if (mode === 'create' && !imageFile) {
+            errors.image = 'Image is required';
         }
 
         // Sort order validation
@@ -180,6 +209,10 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         setIsSubmitting(true);
 
         try {
+            // Prepare image files array - single file that will be uploaded to the selected field
+            const imageFilesArray: File[] = [];
+            if (imageFile) imageFilesArray.push(imageFile);
+
             if (mode === 'create') {
                 const submitData: CreateLoungePayload = {
                     name: formData.name,
@@ -188,7 +221,7 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                     sortOrder: formData.sortOrder
                 };
 
-                await loungesService.createLounge(submitData, imageFiles || []);
+                await loungesService.createLounge(submitData, imageFilesArray, imageType);
                 showToast({
                     type: 'success',
                     title: 'Success',
@@ -202,7 +235,7 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                     sortOrder: formData.sortOrder
                 };
 
-                await loungesService.updateLounge(lounge._id, submitData, imageFiles || undefined);
+                await loungesService.updateLounge(lounge._id, submitData, imageFilesArray.length > 0 ? imageFilesArray : undefined, imageType);
                 showToast({
                     type: 'success',
                     title: 'Success',
@@ -321,43 +354,142 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                 </div>
             </div>
 
-            {/* Current Image Preview (Edit Mode) */}
-            {mode === 'edit' && lounge?.image && (
+            {/* Current Images Preview (Edit Mode) */}
+            {mode === 'edit' && lounge && (
                 <div className="row">
                     <div className="col-12">
-                        <FormField label="Current Image">
-                            <div className="d-flex align-items-center">
-                                <img
-                                    src={getImageUrl(lounge.image)}
-                                    alt={lounge.name}
-                                    className="rounded"
-                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                                />
-                                <div className="ms-3">
-                                    <small className="text-muted">
-                                        Upload a new image to replace the current one
-                                    </small>
-                                </div>
+                        <FormField label="Current Images">
+                            <div className="row">
+                                {lounge.image && (
+                                    <div className="col-md-6">
+                                        <div className="card">
+                                            <img
+                                                src={getImageUrl(lounge.image)}
+                                                alt={lounge.name}
+                                                className="card-img-top"
+                                                style={{ height: '120px', objectFit: 'cover' }}
+                                            />
+                                            <div className="card-body py-2 text-center">
+                                                <small className="text-muted">Main Image</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {lounge.bannerImage && (
+                                    <div className="col-md-6">
+                                        <div className="card">
+                                            <img
+                                                src={getImageUrl(lounge.bannerImage)}
+                                                alt={`${lounge.name} Banner`}
+                                                className="card-img-top"
+                                                style={{ height: '120px', objectFit: 'cover' }}
+                                            />
+                                            <div className="card-body py-2 text-center">
+                                                <small className="text-muted">Banner Image</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                            <small className="text-muted mt-2 d-block">
+                                Upload new images to replace the current ones
+                            </small>
                         </FormField>
                     </div>
                 </div>
             )}
 
-            {/* Images */}
+            {/* Image Upload */}
             <div className="row">
                 <div className="col-12">
-                    <FormField label="Lounge Image" helpText={mode === 'edit' ? 'Select a new image to replace the current one' : 'Select an image for the lounge'}>
+                    <FormField
+                        label="Lounge Image"
+                        helpText="Upload a single image and choose whether it should be the main image or banner image"
+                        required={mode === 'create'}
+                        error={fieldErrors.image}
+                    >
+                        {/* Image Type Selection */}
+                        <div className="mb-3">
+                            <label className="form-label small">Image Type:</label>
+                            <div className="d-flex gap-3">
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="imageType"
+                                        id="mainImage"
+                                        value="image"
+                                        checked={imageType === 'image'}
+                                        onChange={(e) => setImageType(e.target.value as 'image' | 'bannerImage')}
+                                        disabled={isSubmitting}
+                                    />
+                                    <label className="form-check-label" htmlFor="mainImage">
+                                        Main Image
+                                    </label>
+                                </div>
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="radio"
+                                        name="imageType"
+                                        id="bannerImage"
+                                        value="bannerImage"
+                                        checked={imageType === 'bannerImage'}
+                                        onChange={(e) => setImageType(e.target.value as 'image' | 'bannerImage')}
+                                        disabled={isSubmitting}
+                                    />
+                                    <label className="form-check-label" htmlFor="bannerImage">
+                                        Banner Image
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* File Input */}
                         <FormFileInput
-                            onChange={handleImagesChange}
+                            onChange={handleImageChange}
                             accept="image/*"
                             disabled={isSubmitting}
                         />
+
+                        {/* Selected File Info and Preview */}
+                        {imageFile && (
+                            <div className="mt-2">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <small className="text-success">
+                                        <i className="bx bx-check me-1"></i>
+                                        Selected: {imageFile.name}
+                                        <span className="badge bg-primary ms-2">
+                                            {imageType === 'image' ? 'Main Image' : 'Banner Image'}
+                                        </span>
+                                    </small>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger"
+                                        onClick={() => {
+                                            setImageFile(null);
+                                            setImagePreview('');
+                                        }}
+                                        disabled={isSubmitting}
+                                    >
+                                        <i className="bx bx-trash"></i>
+                                    </button>
+                                </div>
+                                {imagePreview && (
+                                    <div className="mt-2">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Image preview"
+                                            className="img-thumbnail"
+                                            style={{ maxWidth: '150px', maxHeight: '100px', objectFit: 'cover' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </FormField>
                 </div>
-            </div>
-
-            {/* Additional info for edit mode */}
+            </div>            {/* Additional info for edit mode */}
             {mode === 'edit' && lounge && (
                 <div className="mt-3 p-3 bg-light rounded">
                     <small className="text-muted">

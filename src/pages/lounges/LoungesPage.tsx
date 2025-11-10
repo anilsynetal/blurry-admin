@@ -427,6 +427,7 @@ const LoungesPage: React.FC = () => {
                                     <thead>
                                         <tr>
                                             <th>Lounge</th>
+                                            <th>Images</th>
                                             <th>Tags</th>
                                             <th>Sort Order</th>
                                             <th>User Count</th>
@@ -439,28 +440,64 @@ const LoungesPage: React.FC = () => {
                                         {lounges.map((lounge) => (
                                             <tr key={lounge._id}>
                                                 <td>
-                                                    <div className="d-flex align-items-center">
-                                                        <div className="avatar avatar-sm me-3">
+                                                    <div>
+                                                        <h6 className="mb-0">{lounge.name || 'Unnamed Lounge'}</h6>
+                                                        <small className="text-muted">
+                                                            {(lounge.description || '').length > 50
+                                                                ? `${(lounge.description || '').substring(0, 50)}...`
+                                                                : (lounge.description || 'No description')
+                                                            }
+                                                        </small>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        {/* Main Image */}
+                                                        <div className="position-relative">
                                                             {lounge.image ? (
                                                                 <img
                                                                     src={getImageUrl(lounge.image)}
-                                                                    alt={lounge.name}
-                                                                    className="rounded"
+                                                                    alt={`${lounge.name} - Main`}
+                                                                    className="rounded border"
+                                                                    style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                                                    title="Main Image"
                                                                 />
                                                             ) : (
-                                                                <span className="avatar-initial rounded bg-primary">
-                                                                    {(lounge.name || 'U').charAt(0).toUpperCase()}
-                                                                </span>
+                                                                <div
+                                                                    className="d-flex align-items-center justify-content-center rounded border bg-light"
+                                                                    style={{ width: '40px', height: '40px' }}
+                                                                    title="No Main Image"
+                                                                >
+                                                                    <i className="bx bx-image text-muted"></i>
+                                                                </div>
                                                             )}
+                                                            <span className="badge bg-primary position-absolute bottom-0 start-0 translate-middle-x" style={{ fontSize: '8px', padding: '2px 4px' }}>
+                                                                Main
+                                                            </span>
                                                         </div>
-                                                        <div>
-                                                            <h6 className="mb-0">{lounge.name || 'Unnamed Lounge'}</h6>
-                                                            <small className="text-muted">
-                                                                {(lounge.description || '').length > 50
-                                                                    ? `${(lounge.description || '').substring(0, 50)}...`
-                                                                    : (lounge.description || 'No description')
-                                                                }
-                                                            </small>
+
+                                                        {/* Banner Image */}
+                                                        <div className="position-relative">
+                                                            {lounge.bannerImage ? (
+                                                                <img
+                                                                    src={getImageUrl(lounge.bannerImage)}
+                                                                    alt={`${lounge.name} - Banner`}
+                                                                    className="rounded border"
+                                                                    style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                                                    title="Banner Image"
+                                                                />
+                                                            ) : (
+                                                                <div
+                                                                    className="d-flex align-items-center justify-content-center rounded border bg-light"
+                                                                    style={{ width: '40px', height: '40px' }}
+                                                                    title="No Banner Image"
+                                                                >
+                                                                    <i className="bx bx-image text-muted"></i>
+                                                                </div>
+                                                            )}
+                                                            <span className="badge bg-secondary position-absolute bottom-0 start-0 translate-middle-x" style={{ fontSize: '8px', padding: '2px 4px' }}>
+                                                                Banner
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </td>

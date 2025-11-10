@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { settingsService, SMTPConfig, StripeConfig } from '../../services/settings.service';
+import { settingsService, SMTPConfig, StripeConfig, AppSettings, InvitationConfig } from '../../services/settings.service';
 import { useToast } from '../../context/ToastContext';
 
 interface ApiError {
@@ -33,6 +33,26 @@ const SettingsPage: React.FC = () => {
         publishableKey: '',
         webhookSecretKey: '',
     });
+    const [appSettings, setAppSettings] = useState<AppSettings>({
+        unblurPercentage: 50,
+    });
+    const [invitationSettings, setInvitationSettings] = useState<InvitationConfig>({
+        inviteTitle: '',
+        inviteDescription: '',
+        bannerImage: null,
+        bannerImageFile: undefined,
+        referrerCreditAmount: 50,
+        referredCreditAmount: 25,
+        isEnabled: true,
+    });
+
+    // Helper function to get full image URL
+    const getImageUrl = (imagePath: string) => {
+        if (!imagePath) return '';
+        if (imagePath.startsWith('http')) return imagePath;
+        const baseUrl = (import.meta as any).env.VITE_API_URL || 'http://localhost:4002';
+        return `${baseUrl.replace('/api/admin', '')}/${imagePath}`;
+    };
 
     useEffect(() => {
         // Delay the API calls to prevent authentication issues on initial load
@@ -84,6 +104,26 @@ const SettingsPage: React.FC = () => {
                 }
             } catch (stripeError) {
                 console.warn('Could not fetch Stripe settings (may require authentication):', stripeError);
+            }
+
+            // Fetch App Settings (requires auth)
+            try {
+                const appResponse = await settingsService.getAppSettings();
+                if (appResponse.status === 'success' && appResponse.data) {
+                    setAppSettings(appResponse.data);
+                }
+            } catch (appError) {
+                console.warn('Could not fetch app settings (may require authentication):', appError);
+            }
+
+            // Fetch Invitation Settings (requires auth)
+            try {
+                const invitationResponse = await settingsService.getInvitationConfig();
+                if (invitationResponse.status === 'success' && invitationResponse.data) {
+                    setInvitationSettings(invitationResponse.data);
+                }
+            } catch (invitationError) {
+                console.warn('Could not fetch invitation settings (may require authentication):', invitationError);
             }
         } catch (error) {
             console.error('General error fetching settings:', error);
@@ -196,6 +236,58 @@ const SettingsPage: React.FC = () => {
         }
     };
 
+    const handleAppSettingsSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await settingsService.updateAppSettings(appSettings);
+            if (response.status === 'success') {
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: 'App settings updated successfully!'
+                });
+            }
+        } catch (error) {
+            console.error('Error updating app settings:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update app settings'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleInvitationSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await settingsService.updateInvitationConfig(invitationSettings);
+            if (response.status === 'success') {
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: 'Invitation settings updated successfully!'
+                });
+            }
+        } catch (error) {
+            console.error('Error updating invitation settings:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update invitation settings'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div>
             <div className="row mb-4">
@@ -266,6 +358,34 @@ const SettingsPage: React.FC = () => {
                                     >
                                         <i className="bx bx-credit-card me-1"></i>
                                         Stripe Configuration
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        type="button"
+                                        className={`nav-link ${activeTab === 'app' ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('app');
+                                        }}
+                                    >
+                                        <i className="bx bx-mobile me-1"></i>
+                                        App Settings
+                                    </button>
+                                </li>
+                                <li className="nav-item">
+                                    <button
+                                        type="button"
+                                        className={`nav-link ${activeTab === 'invitation' ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('invitation');
+                                        }}
+                                    >
+                                        <i className="bx bx-user-plus me-1"></i>
+                                        Invitation Settings
                                     </button>
                                 </li>
                             </ul>
@@ -678,6 +798,468 @@ const SettingsPage: React.FC = () => {
                                                             <i className={`bx ${stripeSettings.webhookSecretKey ? 'bx-check-circle text-success' : 'bx-info-circle text-warning'} me-2`}></i>
                                                             <span className="small">Webhook Secret {stripeSettings.webhookSecretKey ? 'Configured' : 'Optional'}</span>
                                                         </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* App Settings Tab */}
+                                {activeTab === 'app' && (
+                                    <div className="tab-pane active">
+                                        <div className="row">
+                                            <div className="col-xl-8">
+                                                <h5 className="mb-3">Application Settings</h5>
+                                                <p className="text-muted mb-4">Configure application-specific settings for the mobile app.</p>
+
+                                                <form onSubmit={handleAppSettingsSubmit}>
+                                                    <div className="card">
+                                                        <div className="card-header">
+                                                            <h6 className="mb-0">
+                                                                <i className="bx bx-image me-1"></i>
+                                                                Image Settings
+                                                            </h6>
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <div className="row">
+                                                                <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="unblur-percentage" className="form-label">
+                                                                            Unblur Percentage <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <div className="input-group">
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control"
+                                                                                id="unblur-percentage"
+                                                                                value={appSettings.unblurPercentage}
+                                                                                onChange={(e) => setAppSettings({
+                                                                                    ...appSettings,
+                                                                                    unblurPercentage: parseInt(e.target.value) || 0
+                                                                                })}
+                                                                                placeholder="50"
+                                                                                min="0"
+                                                                                max="100"
+                                                                                required
+                                                                            />
+                                                                            <span className="input-group-text">%</span>
+                                                                        </div>
+                                                                        <div className="form-text">
+                                                                            Percentage of image that will be unblurred for app users (0-100%)
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-md-6">
+                                                                    <div className="card bg-light h-100">
+                                                                        <div className="card-body d-flex flex-column justify-content-center">
+                                                                            <h6 className="card-title text-center mb-3">
+                                                                                <i className="bx bx-info-circle me-1 text-info"></i>
+                                                                                Preview Effect
+                                                                            </h6>
+                                                                            <div className="text-center">
+                                                                                <div className="progress mb-2" style={{ height: '20px' }}>
+                                                                                    <div
+                                                                                        className="progress-bar bg-success"
+                                                                                        role="progressbar"
+                                                                                        style={{ width: `${appSettings.unblurPercentage}%` }}
+                                                                                    >
+                                                                                        {appSettings.unblurPercentage}% Unblurred
+                                                                                    </div>
+                                                                                </div>
+                                                                                <small className="text-muted">
+                                                                                    {appSettings.unblurPercentage}% of the image will be visible to users
+                                                                                </small>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="alert alert-info d-flex" role="alert">
+                                                                <i className="bx bx-info-circle me-2 mt-1"></i>
+                                                                <div>
+                                                                    <strong>How it works:</strong> This setting controls what percentage of profile images
+                                                                    are unblurred for app users. A lower percentage means more blur effect, encouraging
+                                                                    users to unlock premium features to see full images.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4">
+                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                            {loading ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="bx bx-save me-1"></i>
+                                                                    Save App Settings
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div className="col-xl-4">
+                                                <div className="card">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-info-circle me-1"></i>
+                                                            Setting Guidelines
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <ul className="mb-0 small text-muted">
+                                                            <li><strong>0-25%:</strong> Heavy blur effect - encourages premium upgrades</li>
+                                                            <li><strong>26-50%:</strong> Moderate blur - balanced user experience</li>
+                                                            <li><strong>51-75%:</strong> Light blur - good for engagement</li>
+                                                            <li><strong>76-100%:</strong> Minimal blur - may reduce premium conversions</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                <div className="card mt-3">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-mobile me-1"></i>
+                                                            Current Configuration
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">Unblur Percentage:</span>
+                                                            <span className="badge bg-primary">{appSettings.unblurPercentage}%</span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">Blur Effect:</span>
+                                                            <span className={`badge ${appSettings.unblurPercentage <= 25 ? 'bg-danger' :
+                                                                appSettings.unblurPercentage <= 50 ? 'bg-warning' :
+                                                                    appSettings.unblurPercentage <= 75 ? 'bg-info' : 'bg-success'
+                                                                }`}>
+                                                                {appSettings.unblurPercentage <= 25 ? 'Heavy' :
+                                                                    appSettings.unblurPercentage <= 50 ? 'Moderate' :
+                                                                        appSettings.unblurPercentage <= 75 ? 'Light' : 'Minimal'}
+                                                            </span>
+                                                        </div>
+                                                        <hr className="my-2" />
+                                                        <small className="text-muted">
+                                                            This affects all profile images in the mobile app.
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Invitation Settings Tab */}
+                                {activeTab === 'invitation' && (
+                                    <div className="tab-pane active">
+                                        <div className="row">
+                                            <div className="col-xl-8">
+                                                <h5 className="mb-3">Invitation & Referral Settings</h5>
+                                                <p className="text-muted mb-4">Configure invitation content and referral credit amounts for the mobile app.</p>
+
+                                                <form onSubmit={handleInvitationSubmit}>
+                                                    {/* Enable/Disable Toggle */}
+                                                    <div className="card mb-4">
+                                                        <div className="card-header">
+                                                            <h6 className="mb-0">
+                                                                <i className="bx bx-toggle-left me-1"></i>
+                                                                Invitation System Status
+                                                            </h6>
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <div className="form-check form-switch">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    id="invitation-enabled"
+                                                                    checked={invitationSettings.isEnabled}
+                                                                    onChange={(e) => setInvitationSettings({
+                                                                        ...invitationSettings,
+                                                                        isEnabled: e.target.checked
+                                                                    })}
+                                                                />
+                                                                <label className="form-check-label" htmlFor="invitation-enabled">
+                                                                    <strong>Enable Invitation System</strong>
+                                                                </label>
+                                                            </div>
+                                                            <small className="text-muted">
+                                                                When enabled, users can invite friends and earn referral credits.
+                                                            </small>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Content Settings */}
+                                                    <div className="card mb-4">
+                                                        <div className="card-header">
+                                                            <h6 className="mb-0">
+                                                                <i className="bx bx-edit me-1"></i>
+                                                                Invitation Content
+                                                            </h6>
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <div className="row">
+                                                                <div className="col-md-12">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="invitation-title" className="form-label">
+                                                                            Invitation Title <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control"
+                                                                            id="invitation-title"
+                                                                            value={invitationSettings.inviteTitle}
+                                                                            onChange={(e) => setInvitationSettings({
+                                                                                ...invitationSettings,
+                                                                                inviteTitle: e.target.value
+                                                                            })}
+                                                                            placeholder="Invite Your Friends"
+                                                                            required
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="row">
+                                                                <div className="col-md-12">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="invitation-description" className="form-label">
+                                                                            Description <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <textarea
+                                                                            className="form-control"
+                                                                            id="invitation-description"
+                                                                            rows={3}
+                                                                            value={invitationSettings.inviteDescription}
+                                                                            onChange={(e) => setInvitationSettings({
+                                                                                ...invitationSettings,
+                                                                                inviteDescription: e.target.value
+                                                                            })}
+                                                                            placeholder="Invite your friends and earn credits when they sign up!"
+                                                                            required
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="row">
+                                                                <div className="col-md-12">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="banner-image" className="form-label">
+                                                                            Banner Image Upload
+                                                                        </label>
+                                                                        <div className="d-flex align-items-center gap-2">
+                                                                            <input
+                                                                                type="file"
+                                                                                className="form-control"
+                                                                                id="banner-image"
+                                                                                accept="image/*"
+                                                                                onChange={(e) => {
+                                                                                    const file = e.target.files?.[0];
+                                                                                    if (file) {
+                                                                                        setInvitationSettings({
+                                                                                            ...invitationSettings,
+                                                                                            bannerImageFile: file
+                                                                                        });
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            {(invitationSettings.bannerImage || invitationSettings.bannerImageFile) && (
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="btn btn-outline-danger btn-sm"
+                                                                                    onClick={() => {
+                                                                                        setInvitationSettings({
+                                                                                            ...invitationSettings,
+                                                                                            bannerImage: null,
+                                                                                            bannerImageFile: undefined
+                                                                                        });
+                                                                                        // Clear the file input
+                                                                                        const fileInput = document.getElementById('banner-image') as HTMLInputElement;
+                                                                                        if (fileInput) fileInput.value = '';
+                                                                                    }}
+                                                                                    title="Remove image"
+                                                                                >
+                                                                                    <i className="bx bx-trash"></i>
+                                                                                </button>
+                                                                            )}
+                                                                        </div>
+                                                                        <small className="form-text text-muted">
+                                                                            Upload a banner image to display in the invitation section (optional). Supported formats: JPG, PNG, GIF, WebP. Max size: 10MB.
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Credit Settings */}
+                                                    <div className="card mb-4">
+                                                        <div className="card-header">
+                                                            <h6 className="mb-0">
+                                                                <i className="bx bx-wallet me-1"></i>
+                                                                Referral Credit Configuration
+                                                            </h6>
+                                                        </div>
+                                                        <div className="card-body">
+                                                            <div className="row">
+                                                                <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="referrer-credit" className="form-label">
+                                                                            Referrer Credit Amount <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <div className="input-group">
+                                                                            <span className="input-group-text">$</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control"
+                                                                                id="referrer-credit"
+                                                                                value={invitationSettings.referrerCreditAmount}
+                                                                                onChange={(e) => setInvitationSettings({
+                                                                                    ...invitationSettings,
+                                                                                    referrerCreditAmount: parseInt(e.target.value) || 0
+                                                                                })}
+                                                                                placeholder="50"
+                                                                                min="0"
+                                                                                step="1"
+                                                                                required
+                                                                            />
+                                                                        </div>
+                                                                        <small className="form-text text-muted">
+                                                                            Credit amount for the user who sends the invitation
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="referred-credit" className="form-label">
+                                                                            Referred User Credit Amount <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <div className="input-group">
+                                                                            <span className="input-group-text">$</span>
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control"
+                                                                                id="referred-credit"
+                                                                                value={invitationSettings.referredCreditAmount}
+                                                                                onChange={(e) => setInvitationSettings({
+                                                                                    ...invitationSettings,
+                                                                                    referredCreditAmount: parseInt(e.target.value) || 0
+                                                                                })}
+                                                                                placeholder="25"
+                                                                                min="0"
+                                                                                step="1"
+                                                                                required
+                                                                            />
+                                                                        </div>
+                                                                        <small className="form-text text-muted">
+                                                                            Credit amount for the new user who signs up with invite code
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="alert alert-info d-flex" role="alert">
+                                                                <i className="bx bx-info-circle me-2 mt-1"></i>
+                                                                <div>
+                                                                    <strong>Credit Processing:</strong> Credits are automatically added to user wallets
+                                                                    when the referred user verifies their email address after signing up with an invite code.
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4">
+                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                            {loading ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="bx bx-save me-1"></i>
+                                                                    Save Invitation Settings
+                                                                </>
+                                                            )}
+                                                        </button>
+
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div className="col-xl-4">
+                                                <div className="card">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-info-circle me-1"></i>
+                                                            Current Configuration
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">System Status:</span>
+                                                            <span className={`badge ${invitationSettings.isEnabled ? 'bg-success' : 'bg-danger'}`}>
+                                                                {invitationSettings.isEnabled ? 'Enabled' : 'Disabled'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">Referrer Credit:</span>
+                                                            <span className="badge bg-primary">${invitationSettings.referrerCreditAmount}</span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">Referred User Credit:</span>
+                                                            <span className="badge bg-info">${invitationSettings.referredCreditAmount}</span>
+                                                        </div>
+                                                        <hr className="my-2" />
+                                                        <small className="text-muted">
+                                                            These settings control the invite friend functionality in the mobile app.
+                                                        </small>
+                                                    </div>
+                                                </div>
+
+                                                <div className="card mt-3">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-mobile me-1"></i>
+                                                            Mobile App Preview
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="text-center p-3" style={{ backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                                                            {(invitationSettings.bannerImage || invitationSettings.bannerImageFile) && (
+                                                                <div className="mb-3">
+                                                                    <img
+                                                                        src={
+                                                                            invitationSettings.bannerImageFile
+                                                                                ? URL.createObjectURL(invitationSettings.bannerImageFile)
+                                                                                : getImageUrl(invitationSettings.bannerImage || '')
+                                                                        }
+                                                                        alt="Invitation Banner"
+                                                                        className="img-fluid rounded"
+                                                                        style={{ maxHeight: '120px', objectFit: 'cover' }}
+                                                                        onError={(e) => {
+                                                                            e.currentTarget.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                            <h6 className="fw-bold mb-2">{invitationSettings.inviteTitle || 'Invite Your Friends'}</h6>
+                                                            <p className="small text-muted mb-3">
+                                                                {invitationSettings.inviteDescription || 'Invite your friends and earn credits when they sign up!'}
+                                                            </p>
+                                                            <button className="btn btn-primary btn-sm" disabled>
+                                                                Share Invite Link
+                                                            </button>
+                                                        </div>
+                                                        <small className="text-muted mt-2 d-block">
+                                                            This is how the invitation section will appear in the mobile app.
+                                                        </small>
                                                     </div>
                                                 </div>
                                             </div>

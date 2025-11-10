@@ -45,6 +45,14 @@ export interface User extends BaseEntity {
     isEmailVerified: boolean;
     isDeleted: boolean;
     lastLogin?: string;
+    // Referral fields
+    inviteCode?: string;
+    invitedBy?: string | User;
+    referralStats?: {
+        totalReferred: number;
+        totalCreditsEarned: number;
+        successfulReferrals: number;
+    };
 }
 
 export interface AdminProfile extends BaseEntity {
@@ -96,6 +104,45 @@ export interface UserStatsResponse {
     verifiedUsers: number;
     unverifiedUsers: number;
     newUsersLast30Days: number;
+    totalReferrals?: number;
+    usersWithReferrals?: number;
+}
+
+export interface UserReferralsResponse extends ApiListResponse<User> {
+    referrer: {
+        _id: string;
+        name: string;
+        email: string;
+        inviteCode: string;
+        referralStats: {
+            totalReferred: number;
+            totalCreditsEarned: number;
+            successfulReferrals: number;
+        };
+    };
+}
+
+export interface UserReferralsResponse {
+    data: User[];
+    pagination: {
+        currentPage: number;
+        totalPages: number;
+        total: number;
+        limit: number;
+        hasNextPage: boolean;
+        hasPrevPage: boolean;
+    };
+    referrer: {
+        _id: string;
+        name: string;
+        email: string;
+        inviteCode: string;
+        referralStats: {
+            totalReferred: number;
+            totalCreditsEarned: number;
+            successfulReferrals: number;
+        };
+    };
 }
 
 class UsersService extends BaseService<User> {
@@ -199,6 +246,16 @@ class UsersService extends BaseService<User> {
                 confirmPassword: passwordData.confirmPassword
             }
         );
+        return this.handleResponse(response);
+    }
+
+    /**
+     * Get users referred by a specific user
+     */
+    async getUserReferrals(userId: string, params: UserQueryParams = {}): Promise<UserReferralsResponse> {
+        const queryString = this.buildQueryString(params);
+        const url = `${this.baseEndpoint}/${userId}/referrals${queryString ? `?${queryString}` : ''}`;
+        const response = await api.get<UserReferralsResponse>(url);
         return this.handleResponse(response);
     }
 }

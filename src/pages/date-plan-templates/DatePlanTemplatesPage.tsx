@@ -49,7 +49,6 @@ const DatePlanTemplatesPage: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [templateImage, setTemplateImage] = useState<File | null>(null);
-    const [iconImage, setIconImage] = useState<File | null>(null);
 
     useEffect(() => {
         fetchTemplates();
@@ -105,7 +104,6 @@ const DatePlanTemplatesPage: React.FC = () => {
             isActive: true
         });
         setTemplateImage(null);
-        setIconImage(null);
         setSelectedTemplate(null);
     };
 
@@ -113,9 +111,8 @@ const DatePlanTemplatesPage: React.FC = () => {
         setIsSubmitting(true);
         clearFieldErrors();
         try {
-            const images = templateImage || iconImage ? {
-                templateImage: templateImage || undefined,
-                iconImage: iconImage || undefined
+            const images = templateImage ? {
+                templateImage: templateImage || undefined
             } : undefined;
             const response = await datePlanTemplatesService.createDatePlanTemplate(formData, images);
             if (response.status === 'success') {
@@ -151,9 +148,8 @@ const DatePlanTemplatesPage: React.FC = () => {
                 isActive: formData.isActive
             };
 
-            const images = templateImage || iconImage ? {
-                templateImage: templateImage || undefined,
-                iconImage: iconImage || undefined
+            const images = templateImage ? {
+                templateImage: templateImage || undefined
             } : undefined;
             const response = await datePlanTemplatesService.updateDatePlanTemplate(selectedTemplate._id!, updateData, images);
 
@@ -329,7 +325,6 @@ const DatePlanTemplatesPage: React.FC = () => {
                                 <thead>
                                     <tr>
                                         <th>Template Image</th>
-                                        <th>Icon</th>
                                         <th>Title</th>
                                         <th>Type</th>
                                         <th>Duration</th>
@@ -354,18 +349,6 @@ const DatePlanTemplatesPage: React.FC = () => {
                                                         />
                                                     ) : (
                                                         <span className="text-muted">No image</span>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {template.icon ? (
-                                                        <img
-                                                            src={getImageUrl(template.icon)}
-                                                            alt={`${template.title} icon`}
-                                                            style={{ width: '30px', height: '30px', objectFit: 'cover' }}
-                                                            className="rounded"
-                                                        />
-                                                    ) : (
-                                                        <span className="text-muted">No icon</span>
                                                     )}
                                                 </td>
                                                 <td>{template.title}</td>
@@ -437,7 +420,7 @@ const DatePlanTemplatesPage: React.FC = () => {
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={9} className="text-center">No date plan templates found</td>
+                                            <td colSpan={8} className="text-center">No date plan templates found</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -545,25 +528,14 @@ const DatePlanTemplatesPage: React.FC = () => {
                                             {fieldErrors.sortOrder && <div className="invalid-feedback">{fieldErrors.sortOrder}</div>}
                                         </div>
                                     </div>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Template Image</label>
-                                            <input
-                                                type="file"
-                                                className="form-control"
-                                                accept="image/*"
-                                                onChange={(e) => setTemplateImage(e.target.files?.[0] || null)}
-                                            />
-                                        </div>
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Icon Image</label>
-                                            <input
-                                                type="file"
-                                                className="form-control"
-                                                accept="image/*"
-                                                onChange={(e) => setIconImage(e.target.files?.[0] || null)}
-                                            />
-                                        </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Template Image</label>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            accept="image/*"
+                                            onChange={(e) => setTemplateImage(e.target.files?.[0] || null)}
+                                        />
                                     </div>
                                 </form>
                             </div>
@@ -690,53 +662,28 @@ const DatePlanTemplatesPage: React.FC = () => {
                                             {fieldErrors.sortOrder && <div className="invalid-feedback">{fieldErrors.sortOrder}</div>}
                                         </div>
                                     </div>
-                                    <div className="row">
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Template Image</label>
-                                            {selectedTemplate?.templateImage && (
-                                                <div className="mb-2">
-                                                    <small className="text-muted">Current image:</small>
-                                                    <div>
-                                                        <img
-                                                            src={getImageUrl(selectedTemplate.templateImage)}
-                                                            alt="Current template image"
-                                                            style={{ width: '100px', height: '100px', objectFit: 'cover' }}
-                                                            className="rounded border"
-                                                        />
-                                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">Template Image</label>
+                                        {selectedTemplate?.templateImage && (
+                                            <div className="mb-2">
+                                                <small className="text-muted">Current image:</small>
+                                                <div>
+                                                    <img
+                                                        src={getImageUrl(selectedTemplate.templateImage)}
+                                                        alt="Current template image"
+                                                        style={{ width: '100px', height: '100px', objectFit: 'cover' }}
+                                                        className="rounded border"
+                                                    />
                                                 </div>
-                                            )}
-                                            <input
-                                                type="file"
-                                                className="form-control"
-                                                accept="image/*"
-                                                onChange={(e) => setTemplateImage(e.target.files?.[0] || null)}
-                                            />
-                                            <small className="text-muted">Leave empty to keep current image</small>
-                                        </div>
-                                        <div className="col-md-6 mb-3">
-                                            <label className="form-label">Icon Image</label>
-                                            {selectedTemplate?.icon && (
-                                                <div className="mb-2">
-                                                    <small className="text-muted">Current icon:</small>
-                                                    <div>
-                                                        <img
-                                                            src={getImageUrl(selectedTemplate.icon)}
-                                                            alt="Current icon image"
-                                                            style={{ width: '60px', height: '60px', objectFit: 'cover' }}
-                                                            className="rounded border"
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input
-                                                type="file"
-                                                className="form-control"
-                                                accept="image/*"
-                                                onChange={(e) => setIconImage(e.target.files?.[0] || null)}
-                                            />
-                                            <small className="text-muted">Leave empty to keep current icon</small>
-                                        </div>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            accept="image/*"
+                                            onChange={(e) => setTemplateImage(e.target.files?.[0] || null)}
+                                        />
+                                        <small className="text-muted">Leave empty to keep current image</small>
                                     </div>
                                 </form>
                             </div>
