@@ -122,29 +122,6 @@ export interface UserReferralsResponse extends ApiListResponse<User> {
     };
 }
 
-export interface UserReferralsResponse {
-    data: User[];
-    pagination: {
-        currentPage: number;
-        totalPages: number;
-        total: number;
-        limit: number;
-        hasNextPage: boolean;
-        hasPrevPage: boolean;
-    };
-    referrer: {
-        _id: string;
-        name: string;
-        email: string;
-        inviteCode: string;
-        referralStats: {
-            totalReferred: number;
-            totalCreditsEarned: number;
-            successfulReferrals: number;
-        };
-    };
-}
-
 class UsersService extends BaseService<User> {
     constructor() {
         super({
