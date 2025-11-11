@@ -94,7 +94,7 @@ class LoungesService extends BaseService<Lounge> {
     /**
      * Create new lounge with image uploads
      */
-    async createLounge(data: CreateLoungePayload, images: FileList | File[], imageType: 'image' | 'bannerImage' = 'image'): Promise<ApiResponse<Lounge>> {
+    async createLounge(data: CreateLoungePayload, mainImage?: File, bannerImage?: File): Promise<ApiResponse<Lounge>> {
         const formData = new FormData();
 
         // Add lounge data
@@ -111,18 +111,22 @@ class LoungesService extends BaseService<Lounge> {
             }
         });
 
-        // Add single image to the specified field type
-        const imageArray = Array.from(images);
-        if (imageArray.length > 0) {
-            formData.append(imageType, imageArray[0]);
-        } return this.uploadFile(this.baseEndpoint, formData);
+        // Add images to their respective fields
+        if (mainImage) {
+            formData.append('image', mainImage);
+        }
+        if (bannerImage) {
+            formData.append('bannerImage', bannerImage);
+        }
+
+        return this.uploadFile(this.baseEndpoint, formData);
     }
 
     /**
      * Update lounge with optional image uploads
      */
-    async updateLounge(id: string, data: UpdateLoungePayload, images?: FileList | File[], imageType: 'image' | 'bannerImage' = 'image'): Promise<ApiResponse<Lounge>> {
-        if (images && images.length > 0) {
+    async updateLounge(id: string, data: UpdateLoungePayload, mainImage?: File, bannerImage?: File): Promise<ApiResponse<Lounge>> {
+        if (mainImage || bannerImage) {
             const formData = new FormData();
 
             // Add lounge data
@@ -139,11 +143,15 @@ class LoungesService extends BaseService<Lounge> {
                 }
             });
 
-            // Add single image to the specified field type
-            const imageArray = Array.from(images);
-            if (imageArray.length > 0) {
-                formData.append(imageType, imageArray[0]);
-            }            // Use PUT method for updates with FormData
+            // Add images to their respective fields
+            if (mainImage) {
+                formData.append('image', mainImage);
+            }
+            if (bannerImage) {
+                formData.append('bannerImage', bannerImage);
+            }
+
+            // Use PUT method for updates with FormData
             const response = await api.put<ApiResponse<Lounge>>(
                 `${this.baseEndpoint}/${id}`,
                 formData,

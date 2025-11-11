@@ -50,9 +50,10 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [imagePreview, setImagePreview] = useState<string>('');
-    const [imageType, setImageType] = useState<'image' | 'bannerImage'>('image');
+    const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+    const [mainImagePreview, setMainImagePreview] = useState<string>('');
+    const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
+    const [bannerImagePreview, setBannerImagePreview] = useState<string>('');
     const [tagInput, setTagInput] = useState<string>('');
 
     const [formData, setFormData] = useState<LoungeFormData>({
@@ -85,9 +86,10 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
             sortOrder: 0
         });
         setFieldErrors({});
-        setImageFile(null);
-        setImagePreview('');
-        setImageType('image');
+        setMainImageFile(null);
+        setMainImagePreview('');
+        setBannerImageFile(null);
+        setBannerImagePreview('');
         setTagInput('');
     };
 
@@ -115,15 +117,15 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         }
     };
 
-    const handleImageChange = (files: FileList | null) => {
+    const handleMainImageChange = (files: FileList | null) => {
         if (files && files[0]) {
             const file = files[0];
-            setImageFile(file);
+            setMainImageFile(file);
 
             // Create preview
             const reader = new FileReader();
             reader.onload = (e) => {
-                setImagePreview(e.target?.result as string);
+                setMainImagePreview(e.target?.result as string);
             };
             reader.readAsDataURL(file);
 
@@ -136,8 +138,34 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                 });
             }
         } else {
-            setImageFile(null);
-            setImagePreview('');
+            setMainImageFile(null);
+            setMainImagePreview('');
+        }
+    };
+
+    const handleBannerImageChange = (files: FileList | null) => {
+        if (files && files[0]) {
+            const file = files[0];
+            setBannerImageFile(file);
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                setBannerImagePreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+
+            // Clear field error when user selects a file
+            if (fieldErrors.bannerImage) {
+                setFieldErrors(prev => {
+                    const newErrors = { ...prev };
+                    delete newErrors.bannerImage;
+                    return newErrors;
+                });
+            }
+        } else {
+            setBannerImageFile(null);
+            setBannerImagePreview('');
         }
     }; const handleTagAdd = (tag: string) => {
         const trimmedTag = tag.trim();
@@ -171,8 +199,8 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         }
 
         // Image validation for create mode
-        if (mode === 'create' && !imageFile) {
-            errors.image = 'Image is required';
+        if (mode === 'create' && !mainImageFile && !bannerImageFile) {
+            errors.image = 'At least one image is required';
         }
 
         // Sort order validation
@@ -209,10 +237,6 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
         setIsSubmitting(true);
 
         try {
-            // Prepare image files array - single file that will be uploaded to the selected field
-            const imageFilesArray: File[] = [];
-            if (imageFile) imageFilesArray.push(imageFile);
-
             if (mode === 'create') {
                 const submitData: CreateLoungePayload = {
                     name: formData.name,
@@ -221,7 +245,7 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                     sortOrder: formData.sortOrder
                 };
 
-                await loungesService.createLounge(submitData, imageFilesArray, imageType);
+                await loungesService.createLounge(submitData, mainImageFile || undefined, bannerImageFile || undefined);
                 showToast({
                     type: 'success',
                     title: 'Success',
@@ -235,7 +259,7 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
                     sortOrder: formData.sortOrder
                 };
 
-                await loungesService.updateLounge(lounge._id, submitData, imageFilesArray.length > 0 ? imageFilesArray : undefined, imageType);
+                await loungesService.updateLounge(lounge._id, submitData, mainImageFile || undefined, bannerImageFile || undefined);
                 showToast({
                     type: 'success',
                     title: 'Success',
@@ -401,85 +425,90 @@ const LoungeFormModal: React.FC<LoungeFormModalProps> = ({
 
             {/* Image Upload */}
             <div className="row">
-                <div className="col-12">
+                <div className="col-md-6">
                     <FormField
-                        label="Lounge Image"
-                        helpText="Upload a single image and choose whether it should be the main image or banner image"
+                        label="Main Image"
+                        helpText="Upload the main lounge image"
                         required={mode === 'create'}
                         error={fieldErrors.image}
                     >
-                        {/* Image Type Selection */}
-                        <div className="mb-3">
-                            <label className="form-label small">Image Type:</label>
-                            <div className="d-flex gap-3">
-                                <div className="form-check">
-                                    <input
-                                        className="form-check-input"
-                                        type="radio"
-                                        name="imageType"
-                                        id="mainImage"
-                                        value="image"
-                                        checked={imageType === 'image'}
-                                        onChange={(e) => setImageType(e.target.value as 'image' | 'bannerImage')}
-                                        disabled={isSubmitting}
-                                    />
-                                    <label className="form-check-label" htmlFor="mainImage">
-                                        Main Image
-                                    </label>
-                                </div>
-                                <div className="form-check">
-                                    <input
-                                        className="form-check-input"
-                                        type="radio"
-                                        name="imageType"
-                                        id="bannerImage"
-                                        value="bannerImage"
-                                        checked={imageType === 'bannerImage'}
-                                        onChange={(e) => setImageType(e.target.value as 'image' | 'bannerImage')}
-                                        disabled={isSubmitting}
-                                    />
-                                    <label className="form-check-label" htmlFor="bannerImage">
-                                        Banner Image
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* File Input */}
                         <FormFileInput
-                            onChange={handleImageChange}
+                            onChange={handleMainImageChange}
                             accept="image/*"
                             disabled={isSubmitting}
                         />
 
                         {/* Selected File Info and Preview */}
-                        {imageFile && (
+                        {mainImageFile && (
                             <div className="mt-2">
                                 <div className="d-flex align-items-center justify-content-between">
                                     <small className="text-success">
                                         <i className="bx bx-check me-1"></i>
-                                        Selected: {imageFile.name}
-                                        <span className="badge bg-primary ms-2">
-                                            {imageType === 'image' ? 'Main Image' : 'Banner Image'}
-                                        </span>
+                                        Selected: {mainImageFile.name}
                                     </small>
                                     <button
                                         type="button"
                                         className="btn btn-sm btn-outline-danger"
                                         onClick={() => {
-                                            setImageFile(null);
-                                            setImagePreview('');
+                                            setMainImageFile(null);
+                                            setMainImagePreview('');
                                         }}
                                         disabled={isSubmitting}
                                     >
                                         <i className="bx bx-trash"></i>
                                     </button>
                                 </div>
-                                {imagePreview && (
+                                {mainImagePreview && (
                                     <div className="mt-2">
                                         <img
-                                            src={imagePreview}
-                                            alt="Image preview"
+                                            src={mainImagePreview}
+                                            alt="Main image preview"
+                                            className="img-thumbnail"
+                                            style={{ maxWidth: '150px', maxHeight: '100px', objectFit: 'cover' }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </FormField>
+                </div>
+                <div className="col-md-6">
+                    <FormField
+                        label="Banner Image"
+                        helpText="Upload the banner image (optional)"
+                        error={fieldErrors.bannerImage}
+                    >
+                        <FormFileInput
+                            onChange={handleBannerImageChange}
+                            accept="image/*"
+                            disabled={isSubmitting}
+                        />
+
+                        {/* Selected File Info and Preview */}
+                        {bannerImageFile && (
+                            <div className="mt-2">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <small className="text-success">
+                                        <i className="bx bx-check me-1"></i>
+                                        Selected: {bannerImageFile.name}
+                                    </small>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-danger"
+                                        onClick={() => {
+                                            setBannerImageFile(null);
+                                            setBannerImagePreview('');
+                                        }}
+                                        disabled={isSubmitting}
+                                    >
+                                        <i className="bx bx-trash"></i>
+                                    </button>
+                                </div>
+                                {bannerImagePreview && (
+                                    <div className="mt-2">
+                                        <img
+                                            src={bannerImagePreview}
+                                            alt="Banner image preview"
                                             className="img-thumbnail"
                                             style={{ maxWidth: '150px', maxHeight: '100px', objectFit: 'cover' }}
                                         />
