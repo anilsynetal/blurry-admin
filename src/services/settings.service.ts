@@ -18,6 +18,7 @@ export interface StripeConfig {
 
 export interface AppSettings {
     unblurPercentage: number;
+    email: string;
 }
 
 export interface InvitationConfig {

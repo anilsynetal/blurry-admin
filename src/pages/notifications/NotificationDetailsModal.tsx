@@ -126,11 +126,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                     {notification.push && notification.pushSent && (
                                                         <span className="badge bg-success">Push Sent</span>
                                                     )}
-                                                    {notification.expiresAt && (
-                                                        <small className="text-muted">
-                                                            Expires: {new Date(notification.expiresAt).toLocaleString()}
-                                                        </small>
-                                                    )}
+
                                                 </div>
                                             </div>
                                         </div>
@@ -313,21 +309,7 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
                                                         )}
                                                     </div>
                                                 </div>
-                                                {notification.expiresAt && (
-                                                    <div className="row mb-3">
-                                                        <div className="col-sm-5">
-                                                            <strong>Expires At:</strong>
-                                                        </div>
-                                                        <div className="col-sm-7">
-                                                            {new Date(notification.expiresAt).toLocaleString()}
-                                                            {new Date(notification.expiresAt) < new Date() && (
-                                                                <div>
-                                                                    <span className="badge bg-danger">Expired</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
+
                                             </div>
                                         </div>
                                     </div>
