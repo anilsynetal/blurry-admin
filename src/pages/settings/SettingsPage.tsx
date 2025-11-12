@@ -36,6 +36,7 @@ const SettingsPage: React.FC = () => {
     });
     const [appSettings, setAppSettings] = useState<AppSettings>({
         unblurPercentage: 50,
+        email: '',
     });
     const [invitationSettings, setInvitationSettings] = useState<InvitationConfig>({
         inviteTitle: '',
@@ -264,7 +265,7 @@ const SettingsPage: React.FC = () => {
     };
     // Test SMTP Connection
     const handleTestConnection = async () => {
-        if (!smtpSettings?.testEmail) {
+        if (!smtpSettings.testEmail) {
             showToast({
                 type: 'error',
                 title: 'Error',
@@ -277,7 +278,7 @@ const SettingsPage: React.FC = () => {
         try {
             const response = await settingsService.testSmtpConnection({
                 ...smtpSettings,
-                userEmail: smtpSettings?.testEmail,
+                userEmail: smtpSettings.testEmail,
             });
 
             if (response.status === 'success') {
@@ -906,6 +907,24 @@ const SettingsPage: React.FC = () => {
                                                                     </div>
                                                                 </div>
                                                                 <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="support-email" className="form-label">
+                                                                            Support Email <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <input
+                                                                            type="email"
+                                                                            className="form-control"
+                                                                            id="support-email"
+                                                                            value={appSettings.email}
+                                                                            onChange={(e) => setAppSettings({
+                                                                                ...appSettings,
+                                                                                email: e.target.value
+                                                                            })}
+                                                                            placeholder="Enter support email"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-md-12 mb-3">
                                                                     <div className="card bg-light h-100">
                                                                         <div className="card-body d-flex flex-column justify-content-center">
                                                                             <h6 className="card-title text-center mb-3">

@@ -32,7 +32,6 @@ interface NotificationFormData {
     type: 'info' | 'warning' | 'error' | 'success' | 'promotion' | 'system';
     priority: 'low' | 'normal' | 'high';
     push: boolean;
-    expiresAt: string;
     recipients: string[];
     metadata: Record<string, any>;
 }
@@ -62,7 +61,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
         type: 'info',
         priority: 'normal',
         push: true,
-        expiresAt: '',
         recipients: [],
         metadata: {}
     });
@@ -108,7 +106,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             type: 'info',
             priority: 'normal',
             push: true,
-            expiresAt: '',
             recipients: [],
             metadata: {}
         });
@@ -174,18 +171,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
         if (mode === 'targeted' && formData.recipients.length === 0) {
             errors.recipients = 'At least one recipient is required for targeted notifications';
         }
-
-        // Expiry date validation
-        if (formData.expiresAt) {
-            const expiryDate = new Date(formData.expiresAt);
-            const now = new Date();
-            if (expiryDate <= now) {
-                errors.expiresAt = 'Expiry date must be in the future';
-            }
-        }
-
-
-
         setFieldErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -230,7 +215,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                 priority: formData.priority,
                 image: imageUrl || undefined,
                 push: formData.push,
-                expiresAt: formData.expiresAt || undefined,
                 data: Object.keys(formData.metadata).length > 0 ? formData.metadata : {}
             };
 
@@ -271,35 +255,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
         }
     };
 
-    const handleTestNotification = async () => {
-        if (!validateForm()) {
-            return;
-        }
-
-        try {
-            await notificationsService.testNotification({
-                title: formData.title,
-                message: formData.message,
-                type: formData.type,
-                priority: formData.priority,
-                push: formData.push
-            });
-            showToast({
-                type: 'success',
-                title: 'Success',
-                message: 'Test notification sent to your account!'
-            });
-        } catch (error) {
-            console.error('Error sending test notification:', error);
-            const apiError = error as ApiError;
-            showToast({
-                type: 'error',
-                title: 'Error',
-                message: apiError.response?.data?.message || 'Failed to send test notification'
-            });
-        }
-    };
-
     return (
         <FormModal
             isOpen={isOpen}
@@ -312,15 +267,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
             size="lg"
             customFooter={
                 <>
-                    <button
-                        type="button"
-                        className="btn btn-outline-info"
-                        onClick={handleTestNotification}
-                        disabled={isSubmitting}
-                    >
-                        <i className="bx bx-test-tube me-1"></i>
-                        Test
-                    </button>
                     <button
                         type="button"
                         className="btn btn-secondary"
@@ -489,17 +435,6 @@ const NotificationFormModal: React.FC<NotificationFormModalProps> = ({
                                 />
                             </div>
                         )}
-                    </FormField>
-                </div>
-                <div className="col-md-6">
-                    <FormField label="Expiry Date" error={fieldErrors.expiresAt}>
-                        <FormInput
-                            type="datetime-local"
-                            value={formData.expiresAt}
-                            onChange={(value) => handleInputChange('expiresAt', value)}
-                            error={!!fieldErrors.expiresAt}
-                            disabled={isSubmitting}
-                        />
                     </FormField>
                 </div>
             </div>

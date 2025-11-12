@@ -23,7 +23,6 @@ export interface Notification extends BaseEntity {
     push: boolean; // Whether to send push notification
     pushSent?: boolean;
     pushSentAt?: string;
-    expiresAt?: string;
     metadata?: Record<string, any>;
     createdBy: string;
     createdByDetails?: {
@@ -51,7 +50,6 @@ export interface CreateBroadcastPayload {
     priority?: 'low' | 'normal' | 'high';
     image?: string;
     push?: boolean;
-    expiresAt?: string;
     data?: Record<string, any>;
 }
 
