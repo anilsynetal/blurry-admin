@@ -23,6 +23,7 @@ const SettingsPage: React.FC = () => {
         pass: '',
         from: '',
         fromName: '',
+        testEmail: '',
     });
     const [privacyPolicy, setPrivacyPolicy] = useState('');
     const [termsConditions, setTermsConditions] = useState('');
@@ -261,6 +262,51 @@ const SettingsPage: React.FC = () => {
             setLoading(false);
         }
     };
+    // Test SMTP Connection
+    const handleTestConnection = async () => {
+        if (!smtpSettings?.testEmail) {
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: 'Please enter an email address to send the test email.',
+            });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const response = await settingsService.testSmtpConnection({
+                ...smtpSettings,
+                userEmail: smtpSettings?.testEmail,
+            });
+
+            if (response.status === 'success') {
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: response.message || 'SMTP connection successful and test email sent!',
+                });
+            } else {
+                showToast({
+                    type: 'error',
+                    title: 'Error',
+                    message: response.message || 'SMTP connection failed.',
+                });
+            }
+        } catch (error) {
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message:
+                    apiError.response?.data?.message ||
+                    apiError.message ||
+                    'SMTP connection failed.',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleInvitationSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -398,120 +444,129 @@ const SettingsPage: React.FC = () => {
                                         <div className="row">
                                             <div className="col-xl-8">
                                                 <h5 className="mb-3">SMTP Configuration</h5>
-                                                <p className="text-muted mb-4">Configure your email server settings for sending emails.</p>
+                                                <p className="text-muted mb-4">
+                                                    Configure your email server settings for sending emails.
+                                                </p>
 
                                                 <form onSubmit={handleSMTPSubmit}>
                                                     <div className="row">
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-host" className="form-label">
-                                                                    SMTP Host <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-control"
-                                                                    id="smtp-host"
-                                                                    value={smtpSettings.host}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, host: e.target.value })}
-                                                                    placeholder="smtp.gmail.com"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">SMTP Host</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={smtpSettings.host}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, host: e.target.value })
+                                                                }
+                                                                placeholder="smtp.gmail.com"
+                                                                required
+                                                            />
                                                         </div>
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-port" className="form-label">
-                                                                    SMTP Port <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="number"
-                                                                    className="form-control"
-                                                                    id="smtp-port"
-                                                                    value={smtpSettings.port}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, port: parseInt(e.target.value) })}
-                                                                    placeholder="587"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">SMTP Port</label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                value={smtpSettings.port}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, port: parseInt(e.target.value) })
+                                                                }
+                                                                placeholder="587"
+                                                                required
+                                                            />
                                                         </div>
                                                     </div>
 
                                                     <div className="row">
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-user" className="form-label">
-                                                                    SMTP Username <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="email"
-                                                                    className="form-control"
-                                                                    id="smtp-user"
-                                                                    value={smtpSettings.user}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, user: e.target.value })}
-                                                                    placeholder="noreply@blurry.com"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">SMTP Username</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={smtpSettings.user}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, user: e.target.value })
+                                                                }
+                                                                placeholder="noreply@domain.com"
+                                                                required
+                                                            />
                                                         </div>
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-pass" className="form-label">
-                                                                    SMTP Password <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="password"
-                                                                    className="form-control"
-                                                                    id="smtp-pass"
-                                                                    value={smtpSettings.pass}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, pass: e.target.value })}
-                                                                    placeholder="Enter password"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">SMTP Password</label>
+                                                            <input
+                                                                type="password"
+                                                                className="form-control"
+                                                                value={smtpSettings.pass}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, pass: e.target.value })
+                                                                }
+                                                                placeholder="Enter password"
+                                                                required
+                                                            />
                                                         </div>
                                                     </div>
 
                                                     <div className="row">
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-from" className="form-label">
-                                                                    From Email <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="email"
-                                                                    className="form-control"
-                                                                    id="smtp-from"
-                                                                    value={smtpSettings.from}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, from: e.target.value })}
-                                                                    placeholder="noreply@blurry.com"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">From Email</label>
+                                                            <input
+                                                                type="email"
+                                                                className="form-control"
+                                                                value={smtpSettings.from}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, from: e.target.value })
+                                                                }
+                                                                placeholder="noreply@domain.com"
+                                                                required
+                                                            />
                                                         </div>
-                                                        <div className="col-md-6">
-                                                            <div className="mb-3">
-                                                                <label htmlFor="smtp-from-name" className="form-label">
-                                                                    From Name <span className="text-danger">*</span>
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-control"
-                                                                    id="smtp-from-name"
-                                                                    value={smtpSettings.fromName}
-                                                                    onChange={(e) => setSMTPSettings({ ...smtpSettings, fromName: e.target.value })}
-                                                                    placeholder="Blurry Team"
-                                                                    required
-                                                                />
-                                                            </div>
+                                                        <div className="col-md-6 mb-3">
+                                                            <label className="form-label">From Name</label>
+                                                            <input
+                                                                type="text"
+                                                                className="form-control"
+                                                                value={smtpSettings.fromName}
+                                                                onChange={(e) =>
+                                                                    setSMTPSettings({ ...smtpSettings, fromName: e.target.value })
+                                                                }
+                                                                placeholder="Support Team"
+                                                                required
+                                                            />
                                                         </div>
                                                     </div>
 
-                                                    <div className="mt-4">
-                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                    {/* 👇 Added: Test Email Input + Button */}
+                                                    <div className="mt-4 d-flex align-items-center gap-2">
+                                                        <button
+                                                            type="submit"
+                                                            className="btn btn-primary"
+                                                            disabled={loading}
+                                                        >
                                                             {loading ? 'Saving...' : 'Save Changes'}
                                                         </button>
-                                                        <button type="button" className="btn btn-outline-secondary">
-                                                            Test Connection
+
+                                                        <input
+                                                            type="email"
+                                                            className="form-control"
+                                                            style={{ maxWidth: '300px' }}
+                                                            placeholder="Enter test email"
+                                                            value={smtpSettings.testEmail || ''}
+                                                            onChange={(e) =>
+                                                                setSMTPSettings({
+                                                                    ...smtpSettings,
+                                                                    testEmail: e.target.value,
+                                                                })
+                                                            }
+                                                        />
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-outline-secondary"
+                                                            onClick={handleTestConnection}
+                                                            disabled={loading || !smtpSettings.testEmail}
+                                                        >
+                                                            {loading ? 'Testing...' : 'Send Test Email'}
                                                         </button>
                                                     </div>
                                                 </form>

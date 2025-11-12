@@ -17,6 +17,7 @@ import MatchesPage from '../pages/matches/MatchesPage';
 import SubscriptionsPage from '../pages/subscriptions/SubscriptionsPage';
 import TransactionsPage from '../pages/transactions/TransactionsPage';
 import ProfilePage from '../pages/profile/ProfilePage';
+import FAQAdminPage from '../pages/faq/FAQAdminPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state } = useAdmin();
@@ -70,6 +71,7 @@ const AdminRoutes: React.FC = () => {
                                 <Route path="/date-plans" element={<DatePlansPage />} />
                                 <Route path="/matches" element={<MatchesPage />} />
                                 <Route path="/email-templates" element={<EmailTemplatesPage />} />
+                                <Route path="/faq" element={<FAQAdminPage />} />
                                 <Route path="/settings" element={<SettingsPage />} />
                                 <Route path="/settings/*" element={<Navigate to="/settings" replace />} />
                                 <Route path="*" element={<Navigate to="/dashboard" replace />} />

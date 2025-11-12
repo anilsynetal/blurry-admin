@@ -7,6 +7,7 @@ export interface SMTPConfig {
     pass: string;
     from: string;
     fromName: string;
+    testEmail?: string;
 }
 
 export interface StripeConfig {
@@ -131,5 +132,11 @@ export const settingsService = {
             const response = await api.put<SettingsResponse>('/v1/settings/invitation-config', configData);
             return response.data;
         }
+    },
+
+    // Test SMTP Connection (send test email)
+    testSmtpConnection: async (data: { userEmail: string }): Promise<SettingsResponse> => {
+        const response = await api.post<SettingsResponse>('/v1/settings/smtp/test', data);
+        return response.data;
     },
 };

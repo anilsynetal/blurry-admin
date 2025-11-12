@@ -42,6 +42,11 @@ const menuItems: MenuItem[] = [
         icon: 'bx bx-calendar',
     },
     {
+        path: 'faq',
+        name: 'FAQ',
+        icon: 'bx bx-help-circle',
+    },
+    {
         path: 'notifications',
         name: 'Notifications',
         icon: 'bx bx-bell',
