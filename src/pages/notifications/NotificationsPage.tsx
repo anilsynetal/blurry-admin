@@ -585,15 +585,7 @@ const NotificationsPage: React.FC = () => {
                                                                 label: 'Resend',
                                                                 icon: 'bx-refresh',
                                                                 onClick: () => handleResendNotification(notification)
-                                                            },
-                                                            ...(notification.expiresAt && new Date(notification.expiresAt) > new Date() ? [{
-                                                                label: 'Mark Expired',
-                                                                icon: 'bx-time',
-                                                                onClick: () => {
-                                                                    // TODO: Implement expire notification
-                                                                },
-                                                                variant: 'warning' as const
-                                                            }] : [])
+                                                            }
                                                         ]}
                                                     />
                                                 </td>
