@@ -326,8 +326,32 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                                             </div>
                                                             <div className="position-absolute top-0 end-0 p-2">
                                                                 <button
-                                                                    className="btn btn-sm btn-ghost p-1"
-                                                                    style={{ fontSize: '12px', opacity: '0.6' }}
+                                                                    className="btn btn-sm p-0"
+                                                                    style={{
+                                                                        fontSize: '18px',
+                                                                        opacity: '0.8',
+                                                                        border: 'none',
+                                                                        background: '#f0f0f0',
+                                                                        color: '#666',
+                                                                        cursor: 'pointer',
+                                                                        transition: 'all 0.2s ease',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center',
+                                                                        width: '28px',
+                                                                        height: '28px',
+                                                                        borderRadius: '4px'
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        e.currentTarget.style.opacity = '1';
+                                                                        e.currentTarget.style.backgroundColor = '#f8d7da';
+                                                                        e.currentTarget.style.color = '#dc3545';
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.opacity = '0.8';
+                                                                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                                                                        e.currentTarget.style.color = '#666';
+                                                                    }}
                                                                     onClick={(e) => handleDeleteNotification(notification._id, e)}
                                                                     title="Delete notification"
                                                                 >

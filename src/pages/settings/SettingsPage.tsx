@@ -37,6 +37,7 @@ const SettingsPage: React.FC = () => {
     const [appSettings, setAppSettings] = useState<AppSettings>({
         unblurPercentage: 50,
         email: '',
+        afterUnblurPercentage: 75,
     });
     const [invitationSettings, setInvitationSettings] = useState<InvitationConfig>({
         inviteTitle: '',
@@ -924,26 +925,72 @@ const SettingsPage: React.FC = () => {
                                                                         />
                                                                     </div>
                                                                 </div>
+                                                                <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="blur-quality-factor" className="form-label">
+                                                                            After Unblur Percentage <span className="text-danger">*</span>
+                                                                        </label>
+                                                                        <div className="input-group">
+                                                                            <input
+                                                                                type="number"
+                                                                                className="form-control"
+                                                                                id="blur-quality-factor"
+                                                                                value={appSettings.afterUnblurPercentage || 75}
+                                                                                onChange={(e) => setAppSettings({
+                                                                                    ...appSettings,
+                                                                                    afterUnblurPercentage: parseInt(e.target.value) || 0
+                                                                                })}
+                                                                                placeholder="75"
+                                                                                min="0"
+                                                                                max="100"
+                                                                                required
+                                                                            />
+                                                                            <span className="input-group-text">%</span>
+                                                                        </div>
+                                                                        <div className="form-text">
+                                                                            Blur intensity after unblur approval (0-100%, higher = stronger blur)
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
                                                                 <div className="col-md-12 mb-3">
                                                                     <div className="card bg-light h-100">
                                                                         <div className="card-body d-flex flex-column justify-content-center">
                                                                             <h6 className="card-title text-center mb-3">
                                                                                 <i className="bx bx-info-circle me-1 text-info"></i>
-                                                                                Preview Effect
+                                                                                Preview Effects
                                                                             </h6>
                                                                             <div className="text-center">
-                                                                                <div className="progress mb-2" style={{ height: '20px' }}>
-                                                                                    <div
-                                                                                        className="progress-bar bg-success"
-                                                                                        role="progressbar"
-                                                                                        style={{ width: `${appSettings.unblurPercentage}%` }}
-                                                                                    >
-                                                                                        {appSettings.unblurPercentage}% Unblurred
+                                                                                <div className="mb-3">
+                                                                                    <label className="form-text fw-bold mb-2">Unblur Effect</label>
+                                                                                    <div className="progress mb-2" style={{ height: '20px' }}>
+                                                                                        <div
+                                                                                            className="progress-bar bg-success"
+                                                                                            role="progressbar"
+                                                                                            style={{ width: `${appSettings.unblurPercentage}%` }}
+                                                                                        >
+                                                                                            {appSettings.unblurPercentage}% Unblurred
+                                                                                        </div>
                                                                                     </div>
+                                                                                    <small className="text-muted">
+                                                                                        {appSettings.unblurPercentage}% of the image will be visible
+                                                                                    </small>
                                                                                 </div>
-                                                                                <small className="text-muted">
-                                                                                    {appSettings.unblurPercentage}% of the image will be visible to users
-                                                                                </small>
+                                                                                <hr className="my-2" />
+                                                                                <div>
+                                                                                    <label className="form-text fw-bold mb-2">After Unblur Blur Intensity</label>
+                                                                                    <div className="progress mb-2" style={{ height: '20px' }}>
+                                                                                        <div
+                                                                                            className="progress-bar bg-warning"
+                                                                                            role="progressbar"
+                                                                                            style={{ width: `${appSettings.afterUnblurPercentage || 75}%` }}
+                                                                                        >
+                                                                                            {appSettings.afterUnblurPercentage || 75}% Blur
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <small className="text-muted">
+                                                                                        Blur intensity applied after user approves unblur
+                                                                                    </small>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1009,6 +1056,10 @@ const SettingsPage: React.FC = () => {
                                                             <span className="badge bg-primary">{appSettings.unblurPercentage}%</span>
                                                         </div>
                                                         <div className="d-flex justify-content-between align-items-center mb-2">
+                                                            <span className="small">After Unblur Blur:</span>
+                                                            <span className="badge bg-warning">{appSettings.afterUnblurPercentage || 75}%</span>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center mb-2">
                                                             <span className="small">Blur Effect:</span>
                                                             <span className={`badge ${appSettings.unblurPercentage <= 25 ? 'bg-danger' :
                                                                 appSettings.unblurPercentage <= 50 ? 'bg-warning' :
@@ -1021,7 +1072,7 @@ const SettingsPage: React.FC = () => {
                                                         </div>
                                                         <hr className="my-2" />
                                                         <small className="text-muted">
-                                                            This affects all profile images in the mobile app.
+                                                            These settings control profile image display and blur effects in the mobile app.
                                                         </small>
                                                     </div>
                                                 </div>
