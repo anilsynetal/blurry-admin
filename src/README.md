@@ -1,6 +1,6 @@
-# Blurry Admin Panel
+# Soulfirst Admin Panel
 
-A complete React.js admin interface for the Blurry dating app, ported from the Laravel get-journey-tours admin template.
+A complete React.js admin interface for the Soulfirst dating app, ported from the Laravel get-journey-tours admin template.
 
 ## Features
 
@@ -80,7 +80,7 @@ Configure these in your `.env` file:
 
 ```env
 VITE_API_URL=http://localhost:3000/api
-VITE_APP_NAME=Blurry Admin
+VITE_APP_NAME=Soulfirst Admin
 VITE_APP_VERSION=1.0.0
 ```
 

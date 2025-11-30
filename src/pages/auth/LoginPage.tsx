@@ -96,12 +96,12 @@ const LoginPage: React.FC = () => {
                             <div className="app-brand justify-content-center mb-0">
                                 <a href="/" className="app-brand-link gap-2">
                                     <span className="app-brand-logo demo">
-                                        <img src="/assets/img/logo.png" alt="Blurry" style={{ maxHeight: '100px' }} />
+                                        <img src="/assets/img/logo.png" alt="Soulfirst" style={{ maxHeight: '100px' }} />
                                     </span>
                                 </a>
                             </div>
                             {/* /Logo */}
-                            <h4 className="mb-2">Welcome to Blurry! 👋</h4>
+                            <h4 className="mb-2">Welcome to Soulfirst! 👋</h4>
                             <p className="mb-4">Please sign-in to your account and start the adventure</p>
 
                             {!showForgotPassword ? (

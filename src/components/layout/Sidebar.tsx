@@ -152,8 +152,8 @@ const Sidebar: React.FC = () => {
                 <Link to="" className="app-brand-link">
                     <span className="app-brand-logo demo">
                         <span className="text-primary d-flex align-items-center">
-                            <img src="/assets/img/logo.png" alt="Blurry Logo" width="60" height="60" />
-                            <span className="app-brand-text demo text-body fw-bold ms-1">Blurry </span>
+                            <img src="/assets/img/logo.png" alt="Soulfirst Logo" width="60" height="60" />
+                            <span className="app-brand-text demo text-body fw-bold ms-1">Soulfirst </span>
                         </span>
                     </span>
                 </Link>

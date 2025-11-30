@@ -9,7 +9,7 @@ const Footer: React.FC = () => {
                 <div className="mb-2 mb-md-0">
                     © {currentYear}, made with ❤️ by{' '}
                     <a href="https://themeselection.com" target="_blank" rel="noopener noreferrer" className="footer-link fw-bolder">
-                        Blurry Team
+                        Soulfirst Team
                     </a>
                 </div>
             </div>
