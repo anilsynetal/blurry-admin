@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
-import { settingsService, SMTPConfig, StripeConfig, AppSettings, InvitationConfig } from '../../services/settings.service';
+import { settingsService, SMTPConfig, MollieConfig, AppSettings, InvitationConfig } from '../../services/settings.service'; // Removed StripeConfig
 import { useToast } from '../../context/ToastContext';
 
 interface ApiError {
@@ -29,10 +29,18 @@ const SettingsPage: React.FC = () => {
     const [termsConditions, setTermsConditions] = useState('');
     const [showPrivacyPreview, setShowPrivacyPreview] = useState(false);
     const [showTermsPreview, setShowTermsPreview] = useState(false);
+    // STRIPE SETTINGS - HIDDEN FOR NOW
+    /*
     const [stripeSettings, setStripeSettings] = useState<StripeConfig>({
         secretKey: '',
         publishableKey: '',
         webhookSecretKey: '',
+    });
+    */
+    const [mollieSettings, setMollieSettings] = useState<MollieConfig>({
+        apiKey: '',
+        profileId: '',
+        isActive: false,
     });
     const [appSettings, setAppSettings] = useState<AppSettings>({
         unblurPercentage: 50,
@@ -99,7 +107,8 @@ const SettingsPage: React.FC = () => {
                 console.warn('Could not fetch terms and conditions:', termsError);
             }
 
-            // Fetch Stripe Configuration (requires auth)
+            // Fetch Stripe Configuration (requires auth) - HIDDEN FOR NOW
+            /*
             try {
                 const stripeResponse = await settingsService.getStripeConfig();
                 if (stripeResponse.status === 'success' && stripeResponse.data) {
@@ -107,6 +116,23 @@ const SettingsPage: React.FC = () => {
                 }
             } catch (stripeError) {
                 console.warn('Could not fetch Stripe settings (may require authentication):', stripeError);
+            }
+            */
+
+            // Fetch Mollie Configuration (requires auth)
+            try {
+                const mollieResponse = await settingsService.getMollieConfig();
+                console.log('Mollie Config Response:', mollieResponse);
+                if (mollieResponse.status === 'success' && mollieResponse.data) {
+                    const mollieConfig = {
+                        ...mollieResponse.data.value,
+                        isActive: mollieResponse.data.isActive || false
+                    };
+                    console.log('Setting Mollie Config:', mollieConfig);
+                    setMollieSettings(mollieConfig);
+                }
+            } catch (mollieError) {
+                console.warn('Could not fetch Mollie settings (may require authentication):', mollieError);
             }
 
             // Fetch App Settings (requires auth)
@@ -213,6 +239,8 @@ const SettingsPage: React.FC = () => {
         }
     };
 
+    // STRIPE SUBMIT - HIDDEN FOR NOW
+    /*
     const handleStripeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -233,6 +261,63 @@ const SettingsPage: React.FC = () => {
                 type: 'error',
                 title: 'Error',
                 message: apiError.response?.data?.message || apiError.message || 'Failed to update Stripe configuration'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+    */
+
+    const handleMollieSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const response = await settingsService.updateMollieConfig(mollieSettings);
+            if (response.status === 'success') {
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: 'Mollie configuration updated successfully!'
+                });
+            }
+        } catch (error) {
+            console.error('Error updating Mollie configuration:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update Mollie configuration'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleMollieToggle = async () => {
+        setLoading(true);
+        try {
+            const updatedSettings = {
+                ...mollieSettings,
+                isActive: !mollieSettings.isActive
+            };
+            console.log('Updating Mollie status to:', updatedSettings);
+            const response = await settingsService.updateMollieConfig(updatedSettings);
+            if (response.status === 'success') {
+                setMollieSettings(updatedSettings);
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: `Mollie payments ${!mollieSettings.isActive ? 'enabled' : 'disabled'}!`
+                });
+            }
+        } catch (error) {
+            console.error('Error updating Mollie status:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update Mollie status'
             });
         } finally {
             setLoading(false);
@@ -394,6 +479,8 @@ const SettingsPage: React.FC = () => {
                                         Terms & Conditions
                                     </button>
                                 </li>
+                                {/* STRIPE CONFIGURATION TAB - HIDDEN FOR NOW */}
+                                {/* 
                                 <li className="nav-item">
                                     <button
                                         type="button"
@@ -406,6 +493,21 @@ const SettingsPage: React.FC = () => {
                                     >
                                         <i className="bx bx-credit-card me-1"></i>
                                         Stripe Configuration
+                                    </button>
+                                </li>
+                                */}
+                                <li className="nav-item">
+                                    <button
+                                        type="button"
+                                        className={`nav-link ${activeTab === 'mollie' ? 'active' : ''}`}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setActiveTab('mollie');
+                                        }}
+                                    >
+                                        <i className="bx bx-money me-1"></i>
+                                        Mollie Configuration
                                     </button>
                                 </li>
                                 <li className="nav-item">
@@ -685,7 +787,8 @@ const SettingsPage: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Stripe Configuration Tab */}
+                                {/* STRIPE CONFIGURATION CONTENT - HIDDEN FOR NOW */}
+                                {/*
                                 {activeTab === 'stripe' && (
                                     <div className="tab-pane active">
                                         <div className="row">
@@ -854,6 +957,184 @@ const SettingsPage: React.FC = () => {
                                                         <div className="d-flex align-items-center">
                                                             <i className={`bx ${stripeSettings.webhookSecretKey ? 'bx-check-circle text-success' : 'bx-info-circle text-warning'} me-2`}></i>
                                                             <span className="small">Webhook Secret {stripeSettings.webhookSecretKey ? 'Configured' : 'Optional'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                */}
+
+                                {/* Mollie Configuration Tab */}
+                                {activeTab === 'mollie' && (
+                                    <div className="tab-pane active">
+                                        <div className="row">
+                                            <div className="col-xl-8">
+                                                <h5 className="mb-3">Mollie Configuration</h5>
+                                                <p className="text-muted mb-4">Manage your Mollie payment gateway credentials for processing payments.</p>
+
+                                                <div className="alert alert-warning" role="alert">
+                                                    <i className="bx bx-info-circle me-2"></i>
+                                                    <strong>Security Notice:</strong> Mollie API keys are sensitive information. Keys will be masked for security purposes.
+                                                </div>
+
+                                                <form onSubmit={handleMollieSubmit}>
+                                                    <div className="row">
+                                                        <div className="col-md-12">
+                                                            <div className="mb-3">
+                                                                <label htmlFor="mollie-api-key" className="form-label">
+                                                                    API Key <span className="text-danger">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="password"
+                                                                    className="form-control"
+                                                                    id="mollie-api-key"
+                                                                    value={mollieSettings.apiKey}
+                                                                    onChange={(e) => setMollieSettings({ ...mollieSettings, apiKey: e.target.value })}
+                                                                    placeholder="test_... or live_..."
+                                                                    required
+                                                                />
+                                                                <div className="form-text">
+                                                                    Your Mollie API key (starts with test_ for test mode or live_ for live mode)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="row">
+                                                        <div className="col-md-12">
+                                                            <div className="mb-3">
+                                                                <label htmlFor="mollie-profile-id" className="form-label">
+                                                                    Profile ID <span className="text-danger">*</span>
+                                                                </label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-control"
+                                                                    id="mollie-profile-id"
+                                                                    value={mollieSettings.profileId}
+                                                                    onChange={(e) => setMollieSettings({ ...mollieSettings, profileId: e.target.value })}
+                                                                    placeholder="pfl_..."
+                                                                    required
+                                                                />
+                                                                <div className="form-text">
+                                                                    Your Mollie profile ID (starts with pfl_) - Found in your Mollie dashboard
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="row">
+                                                        <div className="col-12">
+                                                            <div className="card bg-light">
+                                                                <div className="card-body">
+                                                                    <h6 className="card-title">
+                                                                        <i className="bx bx-info-circle me-1 text-info"></i>
+                                                                        Configuration Guide
+                                                                    </h6>
+                                                                    <ul className="mb-0 small text-muted">
+                                                                        <li><strong>Test Mode:</strong> Use API key starting with test_ for development</li>
+                                                                        <li><strong>Live Mode:</strong> Use API key starting with live_ for production</li>
+                                                                        <li><strong>Profile ID:</strong> Your website's unique identifier in Mollie (format: pfl_XXXXXXXXXX)</li>
+                                                                        <li><strong>Security:</strong> Never expose your API key in client-side code</li>
+                                                                        <li><strong>Webhooks:</strong> Configure webhook endpoints in your Mollie dashboard</li>
+                                                                        <li><strong>Support:</strong> Visit <a href="https://www.mollie.com" target="_blank" rel="noopener noreferrer">mollie.com</a> for more information</li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4">
+                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                            {loading ? (
+                                                                <>
+                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                    Saving...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="bx bx-save me-1"></i>
+                                                                    Save Mollie Configuration
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            <div className="col-xl-4">
+                                                <div className="card bg-light">
+                                                    <div className="card-header bg-primary d-flex justify-content-between align-items-center">
+                                                        <h6 className="mb-0 text-white">
+                                                            <i className="bx bx-shield-check me-1"></i>
+                                                            Configuration Status
+                                                        </h6>
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm fw-bold ${mollieSettings.isActive ? 'btn-success' : 'btn-danger'}`}
+                                                            onClick={handleMollieToggle}
+                                                            disabled={loading}
+                                                            title={mollieSettings.isActive ? 'Click to disable Mollie payments' : 'Click to enable Mollie payments'}
+                                                        >
+                                                            <i className={`bx bx-sm me-1 ${mollieSettings.isActive ? 'bx-check-circle' : 'bx-x-circle'}`}></i>
+                                                            {mollieSettings.isActive ? 'Active' : 'Inactive'}
+                                                        </button>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="mb-3">
+                                                            <div className="d-flex align-items-center mb-2">
+                                                                <i className={`bx bx-lg me-2 ${mollieSettings.apiKey ? 'bx-check-circle text-success' : 'bx-x-circle text-danger'}`}></i>
+                                                                <div>
+                                                                    <small className="d-block fw-bold">API Key</small>
+                                                                    <small className="text-muted">{mollieSettings.apiKey ? '✓ Configured' : '✗ Missing'}</small>
+                                                                </div>
+                                                            </div>
+                                                            <div className="d-flex align-items-center">
+                                                                <i className={`bx bx-lg me-2 ${mollieSettings.profileId ? 'bx-check-circle text-success' : 'bx-x-circle text-danger'}`}></i>
+                                                                <div>
+                                                                    <small className="d-block fw-bold">Profile ID</small>
+                                                                    <small className="text-muted">{mollieSettings.profileId ? '✓ Configured' : '✗ Missing'}</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <hr className="my-3" />
+
+                                                        <div className="alert alert-info mb-0" role="alert">
+                                                            <small>
+                                                                <strong>Tip:</strong> Both API Key and Profile ID are required for Mollie payments to work correctly.
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="card mt-3">
+                                                    <div className="card-header">
+                                                        <h6 className="mb-0">
+                                                            <i className="bx bx-link-external me-1"></i>
+                                                            Quick Links
+                                                        </h6>
+                                                    </div>
+                                                    <div className="card-body">
+                                                        <div className="d-grid gap-2">
+                                                            <a
+                                                                href="https://www.mollie.com/en/dashboard"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="btn btn-outline-primary btn-sm"
+                                                            >
+                                                                <i className="bx bx-link-external me-1"></i>
+                                                                Open Mollie Dashboard
+                                                            </a>
+                                                            <a
+                                                                href="https://docs.mollie.com/"
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="btn btn-outline-info btn-sm"
+                                                            >
+                                                                <i className="bx bx-book me-1"></i>
+                                                                API Documentation
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 </div>

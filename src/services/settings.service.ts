@@ -16,6 +16,12 @@ export interface StripeConfig {
     webhookSecretKey: string;
 }
 
+export interface MollieConfig {
+    apiKey: string;
+    profileId: string;
+    isActive?: boolean;
+}
+
 export interface AppSettings {
     unblurPercentage: number;
     email: string;
@@ -80,6 +86,17 @@ export const settingsService = {
 
     updateStripeConfig: async (config: StripeConfig): Promise<SettingsResponse> => {
         const response = await api.put<SettingsResponse>('/v1/settings/stripe', config);
+        return response.data;
+    },
+
+    // Mollie Configuration
+    getMollieConfig: async (): Promise<SettingsResponse> => {
+        const response = await api.get<SettingsResponse>('/v1/settings/mollie');
+        return response.data;
+    },
+
+    updateMollieConfig: async (config: MollieConfig): Promise<SettingsResponse> => {
+        const response = await api.put<SettingsResponse>('/v1/settings/mollie', config);
         return response.data;
     },
 
