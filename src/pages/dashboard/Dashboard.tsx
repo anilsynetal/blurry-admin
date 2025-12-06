@@ -23,6 +23,7 @@ import {
     DatingStats
 } from '../../services/dashboard.service';
 import { useToast } from '../../context/ToastContext';
+import { getFileUrl } from '../../utils/imageUtils';
 
 // Register Chart.js components
 ChartJS.register(
@@ -364,7 +365,7 @@ const Dashboard: React.FC = () => {
                                             <div className="d-flex align-items-center">
                                                 <div className="avatar me-3">
                                                     {user.avatar ? (
-                                                        <img src={user.avatar} alt={user.name} className="rounded-circle" />
+                                                        <img src={getFileUrl(user.avatar) || user.avatar} alt={user.name} className="rounded-circle" />
                                                     ) : (
                                                         <span className="avatar-initial rounded-circle bg-label-primary">
                                                             {user.name.charAt(0).toUpperCase()}

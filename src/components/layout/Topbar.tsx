@@ -3,6 +3,7 @@ import { useAdmin } from '../../context/SimpleAdminContext';
 import { authService } from '../../services/authService';
 import { adminNotificationsService, AdminNotificationStats } from '../../services/adminNotifications.service';
 import { useToast } from '../../context/ToastContext';
+import { getFileUrl } from '../../utils/imageUtils';
 import { Link } from 'react-router-dom';
 
 interface TopbarProps {
@@ -411,7 +412,7 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                     <div className="avatar avatar-online">
                                         <img
                                             className="w-px-40 h-auto rounded-circle"
-                                            src={state.user?.image || '/assets/img/default-profile.png'}
+                                            src={getFileUrl(state.user?.image) || state.user?.image || '/assets/img/default-profile.png'}
                                             alt="Profile"
                                         />
                                     </div>
@@ -430,7 +431,7 @@ const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
                                                     <div className="avatar avatar-online">
                                                         <img
                                                             className="w-px-40 h-auto rounded-circle"
-                                                            src={state.user?.image || '/assets/img/default-profile.png'}
+                                                            src={getFileUrl(state.user?.image) || state.user?.image || '/assets/img/default-profile.png'}
                                                             alt="Profile"
                                                         />
                                                     </div>

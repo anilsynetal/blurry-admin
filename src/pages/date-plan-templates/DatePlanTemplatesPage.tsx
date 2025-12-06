@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { datePlanTemplatesService, DatePlanTemplate, CreateDatePlanTemplatePayload, UpdateDatePlanTemplatePayload, DatePlanTemplateUser } from '../../services/datePlanTemplates.service';
 import { useToast } from '../../context/ToastContext';
+import { getFileUrl } from '../../utils/imageUtils';
 import Swal from 'sweetalert2';
 
 interface ValidationError {
@@ -762,7 +763,7 @@ const DatePlanTemplatesPage: React.FC = () => {
                                                                     <div className="avatar avatar-sm me-3">
                                                                         {user.profilePicture ? (
                                                                             <img
-                                                                                src={user.profilePicture}
+                                                                                src={getFileUrl(user.profilePicture) || user.profilePicture}
                                                                                 alt={user.name}
                                                                                 className="rounded-circle"
                                                                             />

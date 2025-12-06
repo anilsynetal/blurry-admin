@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { userLoungeDetailsService, type UserLoungeDetail, type UserLoungeDetailsQueryParams } from '../../services/userLoungeDetails.service';
 import { useToast } from '../../context/ToastContext';
+import { getFileUrl } from '../../utils/imageUtils';
 import {
     LoadingSpinner,
     EmptyState,
@@ -175,7 +176,7 @@ const UserLoungeDetailsPage: React.FC = () => {
                                                     <div className="d-flex align-items-center">
                                                         <div className="avatar avatar-sm me-3">
                                                             <img
-                                                                src={detail.lounge.image}
+                                                                src={getFileUrl(detail.lounge.image) || detail.lounge.image}
                                                                 alt={detail.lounge.name}
                                                                 className="rounded-circle"
                                                                 style={{ width: '32px', height: '32px', objectFit: 'cover' }}

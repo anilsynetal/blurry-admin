@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { loungesService, Lounge, LoungeQueryParams, LoungeUser } from '../../services/lounges.service';
 import { useToast } from '../../context/ToastContext';
+import { getFileUrl } from '../../utils/imageUtils';
 import {
     LoadingSpinner,
     EmptyState,
@@ -690,7 +691,7 @@ const LoungesPage: React.FC = () => {
                                                                     <div className="avatar avatar-sm me-3">
                                                                         {user.profilePicture ? (
                                                                             <img
-                                                                                src={user.profilePicture}
+                                                                                src={getFileUrl(user.profilePicture) || user.profilePicture}
                                                                                 alt={user.name}
                                                                                 className="rounded-circle"
                                                                             />
