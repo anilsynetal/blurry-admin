@@ -56,6 +56,7 @@ const SettingsPage: React.FC = () => {
         referredCreditAmount: 25,
         isEnabled: true,
     });
+    const [purchasePlanEnabled, setPurchasePlanEnabled] = useState<boolean>(true);
 
     // Helper function to get full image URL
     const getImageUrl = (imagePath: string) => {
@@ -143,6 +144,16 @@ const SettingsPage: React.FC = () => {
                 }
             } catch (appError) {
                 console.warn('Could not fetch app settings (may require authentication):', appError);
+            }
+
+            // Fetch Purchase Plan (requires auth for admin)
+            try {
+                const purchaseResponse = await settingsService.getPurchasePlan();
+                if (purchaseResponse.status === 'success' && purchaseResponse.data) {
+                    setPurchasePlanEnabled(Boolean(purchaseResponse.data.isEnabled));
+                }
+            } catch (purchaseError) {
+                console.warn('Could not fetch purchase plan setting:', purchaseError);
             }
 
             // Fetch Invitation Settings (requires auth)
@@ -318,6 +329,32 @@ const SettingsPage: React.FC = () => {
                 type: 'error',
                 title: 'Error',
                 message: apiError.response?.data?.message || apiError.message || 'Failed to update Mollie status'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePurchaseToggle = async () => {
+        setLoading(true);
+        try {
+            const updated = !purchasePlanEnabled;
+            const response = await settingsService.updatePurchasePlan({ isEnabled: updated });
+            if (response.status === 'success') {
+                setPurchasePlanEnabled(updated);
+                showToast({
+                    type: 'success',
+                    title: 'Success',
+                    message: `Purchase plans ${updated ? 'enabled' : 'disabled'} successfully!`
+                });
+            }
+        } catch (error) {
+            console.error('Error updating purchase plan setting:', error);
+            const apiError = error as ApiError;
+            showToast({
+                type: 'error',
+                title: 'Error',
+                message: apiError.response?.data?.message || apiError.message || 'Failed to update purchase plan setting'
             });
         } finally {
             setLoading(false);
@@ -1290,19 +1327,36 @@ const SettingsPage: React.FC = () => {
                                                     </div>
 
                                                     <div className="mt-4">
-                                                        <button type="submit" className="btn btn-primary me-2" disabled={loading}>
-                                                            {loading ? (
-                                                                <>
-                                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                    Saving...
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <i className="bx bx-save me-1"></i>
-                                                                    Save App Settings
-                                                                </>
-                                                            )}
-                                                        </button>
+                                                        <div className="d-flex align-items-center gap-3">
+                                                            <div className="form-check form-switch">
+                                                                <input
+                                                                    className="form-check-input"
+                                                                    type="checkbox"
+                                                                    id="purchase-plan-toggle"
+                                                                    checked={purchasePlanEnabled}
+                                                                    onChange={() => setPurchasePlanEnabled(!purchasePlanEnabled)}
+                                                                />
+                                                                <label className="form-check-label" htmlFor="purchase-plan-toggle">Enable Purchase Plans</label>
+                                                            </div>
+
+                                                            <button type="button" className="btn btn-outline-secondary" onClick={handlePurchaseToggle} disabled={loading}>
+                                                                {purchasePlanEnabled ? 'Disable Purchase' : 'Enable Purchase'}
+                                                            </button>
+
+                                                            <button type="submit" className="btn btn-primary me-2" disabled={loading}>
+                                                                {loading ? (
+                                                                    <>
+                                                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                                        Saving...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <i className="bx bx-save me-1"></i>
+                                                                        Save App Settings
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </form>
                                             </div>

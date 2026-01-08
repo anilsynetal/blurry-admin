@@ -158,4 +158,15 @@ export const settingsService = {
         const response = await api.post<SettingsResponse>('/v1/settings/smtp/test', data);
         return response.data;
     },
+
+    // Purchase Plan Configuration
+    getPurchasePlan: async (): Promise<SettingsResponse> => {
+        const response = await api.get<SettingsResponse>('/v1/settings/purchase-plan');
+        return response.data;
+    },
+
+    updatePurchasePlan: async (config: { isEnabled: boolean }): Promise<SettingsResponse> => {
+        const response = await api.put<SettingsResponse>('/v1/settings/purchase-plan', config);
+        return response.data;
+    },
 };
