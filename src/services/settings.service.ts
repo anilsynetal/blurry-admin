@@ -26,6 +26,7 @@ export interface AppSettings {
     unblurPercentage: number;
     email: string;
     afterUnblurPercentage?: number;
+    timezone?: string;
 }
 
 export interface InvitationConfig {

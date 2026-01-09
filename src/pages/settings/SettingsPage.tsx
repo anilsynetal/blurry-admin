@@ -46,6 +46,7 @@ const SettingsPage: React.FC = () => {
         unblurPercentage: 50,
         email: '',
         afterUnblurPercentage: 75,
+        timezone: 'UTC',
     });
     const [invitationSettings, setInvitationSettings] = useState<InvitationConfig>({
         inviteTitle: '',
@@ -1241,6 +1242,27 @@ const SettingsPage: React.FC = () => {
                                                                             })}
                                                                             placeholder="Enter support email"
                                                                         />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="col-md-6">
+                                                                    <div className="mb-3">
+                                                                        <label htmlFor="timezone" className="form-label">
+                                                                            Timezone
+                                                                        </label>
+                                                                        <input
+                                                                            type="text"
+                                                                            className="form-control"
+                                                                            id="timezone"
+                                                                            value={appSettings.timezone || 'UTC'}
+                                                                            onChange={(e) => setAppSettings({
+                                                                                ...appSettings,
+                                                                                timezone: e.target.value
+                                                                            })}
+                                                                            placeholder="e.g., UTC, Asia/Kolkata, America/New_York"
+                                                                        />
+                                                                        <div className="form-text">
+                                                                            IANA timezone identifier (e.g., UTC, Asia/Kolkata, America/New_York, Europe/London)
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                                 <div className="col-md-6">
