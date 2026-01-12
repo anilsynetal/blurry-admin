@@ -14,7 +14,6 @@ import {
 import { useToast } from '../../context/ToastContext';
 import Swal from 'sweetalert2';
 
-
 const FAQAdminPage: React.FC = () => {
     const { showToast } = useToast();
     const [faqs, setFaqs] = useState<FAQ[]>([]);
