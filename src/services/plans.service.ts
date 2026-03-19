@@ -10,6 +10,7 @@ export interface Plan {
     matchesLimit: number;
     isFree: boolean;
     billingCycle: string;
+    ios_plan_id?: string;
     badge?: string;
     sortOrder: number;
     isActive?: boolean;

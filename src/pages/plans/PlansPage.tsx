@@ -34,6 +34,7 @@ const PlansPage: React.FC = () => {
         matchesLimit: 50,
         isFree: false,
         billingCycle: 'monthly',
+        ios_plan_id: '',
         badge: '',
         sortOrder: 1
     });
@@ -232,6 +233,7 @@ const PlansPage: React.FC = () => {
             matchesLimit: plan.matchesLimit,
             isFree: plan.isFree,
             billingCycle: plan.billingCycle,
+            ios_plan_id: plan.ios_plan_id || '',
             badge: plan.badge || '',
             sortOrder: plan.sortOrder
         });
@@ -250,6 +252,7 @@ const PlansPage: React.FC = () => {
             matchesLimit: 50,
             isFree: false,
             billingCycle: 'monthly',
+            ios_plan_id: '',
             badge: '',
             sortOrder: 1
         });
@@ -309,6 +312,9 @@ const PlansPage: React.FC = () => {
                                     <div>
                                         <h5 className="mb-1">{plan.name}</h5>
                                         <p className="text-muted mb-0">{plan.description}</p>
+                                        {plan.ios_plan_id && (
+                                            <small className="text-muted d-block">iOS ID: {plan.ios_plan_id}</small>
+                                        )}
                                     </div>
                                     <div className="dropdown">
                                         <button
@@ -486,6 +492,20 @@ const PlansPage: React.FC = () => {
                                             </select>
                                         </div>
                                     </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">iOS Plan ID</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${fieldErrors.ios_plan_id ? 'is-invalid' : ''}`}
+                                            value={formData.ios_plan_id}
+                                            onChange={(e) => setFormData({ ...formData, ios_plan_id: e.target.value })}
+                                            placeholder="e.g., com.blurry.premium.monthly"
+                                        />
+                                        {fieldErrors.ios_plan_id && (
+                                            <div className="invalid-feedback">{fieldErrors.ios_plan_id}</div>
+                                        )}
+                                        <small className="text-muted">Match the product identifier configured in App Store Connect.</small>
+                                    </div>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
                                             <label className="form-label">Credits</label>
@@ -649,6 +669,20 @@ const PlansPage: React.FC = () => {
                                                 <option value="weekly">Weekly</option>
                                             </select>
                                         </div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <label className="form-label">iOS Plan ID</label>
+                                        <input
+                                            type="text"
+                                            className={`form-control ${fieldErrors.ios_plan_id ? 'is-invalid' : ''}`}
+                                            value={formData.ios_plan_id}
+                                            onChange={(e) => setFormData({ ...formData, ios_plan_id: e.target.value })}
+                                            placeholder="e.g., com.blurry.premium.monthly"
+                                        />
+                                        {fieldErrors.ios_plan_id && (
+                                            <div className="invalid-feedback">{fieldErrors.ios_plan_id}</div>
+                                        )}
+                                        <small className="text-muted">Match the product identifier configured in App Store Connect.</small>
                                     </div>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
